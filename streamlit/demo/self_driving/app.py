@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import altair as alt
 import pandas as pd
@@ -23,6 +24,7 @@ LABEL_COLORS = {
 # it across runs.
 @st.cache
 def load_metadata(url):
+    print('url:' + url)
     metadata = pd.read_csv(url)
     # one_hot_encoded = pd.get_dummies(metadata[['frame', 'label']], columns=['label'])
     # summary = one_hot_encoded.groupby(['frame']).sum()
