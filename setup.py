@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name="streamlit-demo-self-driving",
-    version="0.0.3",
+    version="0.0.1",
     author="Streamlit Inc",
     author_email="hello@streamlit.io",
     description="Self-deriving car demo for Streamlit",
@@ -15,6 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://streamlit.io",
     packages=setuptools.find_packages(),
-    install_requires = requirements
+    install_requires = requirements,
+    include_package_data = True
 )
 
