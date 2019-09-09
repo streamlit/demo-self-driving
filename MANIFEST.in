@@ -1,2 +1,2 @@
 include README.md
-include yolo3.cfg
+include streamlit_demo/self_driving/yolov3.cfg
