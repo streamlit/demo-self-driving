@@ -9,7 +9,8 @@ import streamlit as st
 # load the COCO class labels our YOLO model was trained on
 LABELS_PATH = "coco.names"
 WEIGHTS_PATH = "yolov3.weights"
-CONFIG_PATH = "yolov3.cfg"
+my_path = os.path.abspath(os.path.dirname(__file__))
+CONFIG_PATH = os.path.join(my_path, "yolov3.cfg")
 
 @st.cache
 def get_labels_and_colors(labels_path):
@@ -21,7 +22,7 @@ def get_labels_and_colors(labels_path):
         dtype="uint8")
 
     return labels, colors
-    
+
 # load our YOLO object detector trained on COCO dataset (80 classes)
 @st.cache(ignore_hash=True)
 def load_network(config_path, weights_path):
@@ -32,9 +33,9 @@ def load_network(config_path, weights_path):
     output_layer_names = [output_layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
     return net, output_layer_names
 
-def yolo_v3(image, confidence_threshold=0.5, overlap_threshold=0.3):
+def yolo_v3(image, confidence_threshold=0.5, overlap_threshold=0.3, weights_path=WEIGHTS_PATH, config_path=CONFIG_PATH):
     # Load the network. Because this is cached it will only happen once.
-    net, output_layer_names = load_network(CONFIG_PATH, WEIGHTS_PATH)
+    net, output_layer_names = load_network(config_path, weights_path)
 
     # load our input image and grab its spatial dimensions
     H, W = image.shape[:2]
@@ -82,7 +83,7 @@ def yolo_v3(image, confidence_threshold=0.5, overlap_threshold=0.3):
                 boxes.append([x, y, int(width), int(height)])
                 confidences.append(float(confidence))
                 class_IDs.append(classID)
-    
+
     # apply non-maxima suppression to suppress weak, overlapping bounding
     # boxes
     idxs = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold,
@@ -152,7 +153,7 @@ def yolo_v3(image, confidence_threshold=0.5, overlap_threshold=0.3):
         None, # diningtable
         None, # toilet
         None, # tvmonitor
-        None, # 
+        None, #
         None, # mouse
         None, # remote
         None, # keyboard

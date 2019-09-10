@@ -7,6 +7,10 @@ import os
 import urllib
 import cv2
 import time
+import tempfile
+import concurrent.futures
+import hashlib
+
 try:
     from streamlit_demo.self_driving import yolov3
 except ModuleNotFoundError:
@@ -22,6 +26,21 @@ LABEL_COLORS = {
     'trafficLight': [255, 255, 0],
     'biker': [255, 0, 255],
 }
+
+WEIGHTS_FILE = 'yolov3-tiny.weights'
+WEIGHTS_URL = os.path.join('https://pjreddie.com/media/files', WEIGHTS_FILE)
+WEIGTHS_MD5 = '3bcd6b390912c18924b46b26a9e7ff53'
+
+def check_weights_hash():
+    if not os.path.exists(WEIGHTS_FILE):
+        return False
+    with open(WEIGHTS_FILE, 'rb') as f:
+        m = hashlib.md5()
+        m.update(f.read())
+        print(m.digest())
+        if str(m.hexdigest()) != WEIGTHS_MD5:
+            return False
+    return True
 
 # st.cache allows us to reuse computation across runs, making Streamlit really fast.
 # This is a comman usage, where we load data from an endpoint once and then reuse
@@ -59,11 +78,29 @@ def add_boxes(image, boxes):
         image[ymin:ymax,xmin:xmax,:] /= 2
     return image.astype(np.uint8)
 
+def download_weights():
+    if check_weights_hash():
+        return
+    with st.spinner('Downloading weights'):
+        progress_bar = st.progress(0)
+        with open(WEIGHTS_FILE, 'wb') as fp:
+            with urllib.request.urlopen(WEIGHTS_URL) as response:
+                length = int(response.info()['Content-Length'])
+                print('info:', length)
+                counter = 0
+                while True:
+                    data = response.read(8192)
+                    if not data:
+                        break
+                    counter += len(data)
+                    progress = 1.0 * counter / length
+                    progress_bar.progress(progress if progress <= 1.0 else 1.0)
+                    fp.write(data)
+
 def main():
+    print(check_weights_hash())
     metadata = load_metadata(LABELS_FILENAME)
     summary = create_summary(metadata)
-    # st.show(metadata[:1000])
-    # st.show(summary[:1000])
 
     st.sidebar.title('Frame')
     label = st.sidebar.selectbox('label', summary.columns)
@@ -76,8 +113,6 @@ def main():
     if len(selected_frames) < 1:
         st.error('No frames fit the criteria. 😳 Please select different label or number. ✌️')
         return
-
-    # st.show(selected_frames)
 
     frames = metadata.frame.unique()
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
@@ -97,22 +132,24 @@ def main():
     st.sidebar.altair_chart(alt.layer(chart, vline))
     boxes = metadata[metadata.frame == selected_frame].drop(columns=['frame'])
 
-    # st.image(image, use_column_width=True)
-
     "### Ground Truth `%i`/`%i` : `%s`" % (selected_frame_index, len(selected_frames), selected_frame)
 
     image_with_boxes = add_boxes(image, boxes)
     st.image(image_with_boxes, use_column_width=True)
 
+    download_weights()
+    weights_path = os.path.join(os.getcwd(), WEIGHTS_FILE)
+    print(weights_path)
     st.sidebar.markdown('----\n # Model')
     st.sidebar.markdown('')
-    if st.sidebar.checkbox('Run Yolo Detection', True):
+    if st.sidebar.checkbox('Run Yolo Detection', False):
         confidence_threshold = st.sidebar.slider('confidence_threshold', 0.0, 1.0, 0.5, 0.01)
         overlap_threshold = st.sidebar.slider('overlap threshold', 0.0, 1.0, 0.3, 0.01)
 
         yolo_boxes = yolov3.yolo_v3(image,
             overlap_threshold=overlap_threshold,
-            confidence_threshold=confidence_threshold)
+            confidence_threshold=confidence_threshold,
+            weights_path=weights_path)
         image3 = add_boxes(image, yolo_boxes)
         st.write('### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)' % \
             (overlap_threshold, confidence_threshold))
