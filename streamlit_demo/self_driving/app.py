@@ -6,8 +6,12 @@ import numpy as np
 import os
 import urllib
 import cv2
-import streamlit_demo.self_driving.yolov3
 import time
+try:
+    from streamlit_demo.self_driving import yolov3
+except ModuleNotFoundError:
+    import yolov3
+
 
 DATA_URL_ROOT = 'https://streamlit-self-driving.s3-us-west-2.amazonaws.com/'
 LABELS_FILENAME = os.path.join(DATA_URL_ROOT, 'labels.csv.gz')
@@ -24,7 +28,7 @@ LABEL_COLORS = {
 # it across runs.
 @st.cache
 def load_metadata(url):
-    print('url:' + url)
+    # print('url:' + url)
     metadata = pd.read_csv(url)
     # one_hot_encoded = pd.get_dummies(metadata[['frame', 'label']], columns=['label'])
     # summary = one_hot_encoded.groupby(['frame']).sum()
