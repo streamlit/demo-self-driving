@@ -6,7 +6,7 @@ import numpy as np
 import os
 import urllib
 import cv2
-import yolov3
+import streamlit_demo.self_driving.yolov3
 import time
 
 DATA_URL_ROOT = 'https://streamlit-self-driving.s3-us-west-2.amazonaws.com/'
@@ -116,6 +116,3 @@ def main():
     else:
         st.warning('Click _Run Yolo Detection_ on the left to compare with ground truth.')
 
-
-if __name__ == '__main__':
-    main()

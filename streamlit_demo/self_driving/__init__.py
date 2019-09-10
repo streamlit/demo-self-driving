@@ -1,6 +1,4 @@
-def hello():
-    return 'hello'
+from streamlit_demo.self_driving import app
 
-from . import app
-
-app.main()
+if __name__ == '__main__':
+    app.main()
