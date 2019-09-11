@@ -1,3 +1,0 @@
-include README.md
-include streamlit_demo/self_driving/yolov3.cfg
-include streamlit_demo/self_driving/coco.names
