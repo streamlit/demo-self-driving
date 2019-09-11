@@ -32,3 +32,8 @@ eggs/
 ######### 
 .vscode
 streamlit_demo/.vscode
+
+######
+# Yolo
+######
+yolov3.weights
