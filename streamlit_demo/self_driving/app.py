@@ -32,7 +32,7 @@ WEIGHTS_URL = os.path.join('https://pjreddie.com/media/files', WEIGHTS_FILE)
 # WEIGTHS_MD5 = '3bcd6b390912c18924b46b26a9e7ff53'
 WEIGTHS_MD5 = 'c84e5b99d0e52cd466ae710cadf6d84c'
 
-def check_weights_hash():
+def weights_downloaded():
     if not os.path.exists(WEIGHTS_FILE):
         return False
     with open(WEIGHTS_FILE, 'rb') as f:
@@ -79,27 +79,46 @@ def add_boxes(image, boxes):
         image[ymin:ymax,xmin:xmax,:] /= 2
     return image.astype(np.uint8)
 
+@st.cache
+def get_selected_frames(summary, label, min_elts, max_elts):
+    return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
+
 def download_weights():
-    if check_weights_hash():
-        return
-    with st.spinner('Downloading weights'):
-        progress_bar = st.progress(0)
+    try:
+        DOWNLOAD_MESSAGE = 'Downloading weights...'
+        title = st.markdown("""
+            # Self Driving Car Demo
+            
+            Put some text here.
+            """)
+        weights_warning = st.warning(DOWNLOAD_MESSAGE)
+        progress_bar = st.progress(0)    
         with open(WEIGHTS_FILE, 'wb') as fp:
             with urllib.request.urlopen(WEIGHTS_URL) as response:
                 length = int(response.info()['Content-Length'])
                 print('info:', length)
-                counter = 0
+                counter = 0.0
                 while True:
                     data = response.read(8192)
                     if not data:
                         break
                     counter += len(data)
-                    progress = 1.0 * counter / length
+                    progress = counter / length
+                    MEGABYTES = 2.0 ** -20.0
+                    weights_warning.warning('%s (%6.2f/%6.2f MB)' % \
+                        (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
                     progress_bar.progress(progress if progress <= 1.0 else 1.0)
                     fp.write(data)
+    finally:
+        title.empty()
+        weights_warning.empty()
+        progress_bar.empty()
 
 def main():
-    print(check_weights_hash())
+    if not weights_downloaded():
+        download_weights()
+
+    # print(weights_downloaded())
     metadata = load_metadata(LABELS_FILENAME)
     summary = create_summary(metadata)
 
@@ -107,9 +126,6 @@ def main():
     label = st.sidebar.selectbox('label', summary.columns)
     min_elts, max_elts = st.sidebar.slider(label, 0, 25, [10, 20])
 
-    @st.cache
-    def get_selected_frames(summary, label, min_elts, max_elts):
-        return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
     selected_frames = get_selected_frames(summary, label, min_elts, max_elts)
     if len(selected_frames) < 1:
         st.error('No frames fit the criteria. 😳 Please select different label or number. ✌️')
@@ -133,12 +149,12 @@ def main():
     st.sidebar.altair_chart(alt.layer(chart, vline))
     boxes = metadata[metadata.frame == selected_frame].drop(columns=['frame'])
 
-    "### Ground Truth `%i`/`%i` : `%s`" % (selected_frame_index, len(selected_frames), selected_frame)
+    st.write("### Ground Truth `%i`/`%i` : `%s`" % (selected_frame_index, len(selected_frames), selected_frame))
 
     image_with_boxes = add_boxes(image, boxes)
     st.image(image_with_boxes, use_column_width=True)
 
-    download_weights()
+    # download_weights()
     weights_path = os.path.join(os.getcwd(), WEIGHTS_FILE)
     print(weights_path)
     st.sidebar.markdown('----\n # Model')
