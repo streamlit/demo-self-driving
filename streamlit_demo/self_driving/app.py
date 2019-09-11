@@ -10,14 +10,7 @@ import time
 import tempfile
 import concurrent.futures
 import hashlib
-import argparse
 import cv2
-
-# try:
-#     from streamlit_demo.self_driving import yolov3
-# except ModuleNotFoundError:
-#     import yolov3
-
 
 DATA_URL_ROOT = 'https://streamlit-self-driving.s3-us-west-2.amazonaws.com/'
 LABELS_FILENAME = os.path.join(DATA_URL_ROOT, 'labels.csv.gz')
@@ -35,7 +28,7 @@ WEIGHTS_FILE = 'yolov3.weights'
 LABELS_PATH = "coco.names"
 WEIGHTS_PATH = "yolov3.weights"
 my_path = os.path.abspath(os.path.dirname(__file__))
-CONFIG_PATH = os.path.join(my_path, "yolov3.cfg")
+CONFIG_PATH = 'yolov3.cfg'
 
 # sorted?
 EXTERNAL_FILES = {
@@ -65,7 +58,6 @@ def file_downloaded(filename):
     with open(filename, 'rb') as f:
         m = hashlib.md5()
         m.update(f.read())
-        print(m.digest())
         if str(m.hexdigest()) != EXTERNAL_FILES[filename]['md5']:
             return False
     return True
@@ -107,7 +99,6 @@ def download_file(filename):
 # it across runs.
 @st.cache
 def load_metadata(url):
-    # print('url:' + url)
     metadata = pd.read_csv(url)
     # one_hot_encoded = pd.get_dummies(metadata[['frame', 'label']], columns=['label'])
     # summary = one_hot_encoded.groupby(['frame']).sum()
@@ -147,7 +138,6 @@ def main():
         if not file_downloaded(filename):
             download_file(filename)
 
-    # print(weights_downloaded())
     metadata = load_metadata(LABELS_FILENAME)
     summary = create_summary(metadata)
 
@@ -183,9 +173,6 @@ def main():
     image_with_boxes = add_boxes(image, boxes)
     st.image(image_with_boxes, use_column_width=True)
 
-    # download_weights()
-    weights_path = os.path.join(os.getcwd(), WEIGHTS_FILE)
-    print(weights_path)
     st.sidebar.markdown('----\n # Model')
     st.sidebar.markdown('')
     if st.sidebar.checkbox('Run Yolo Detection', False):
@@ -195,7 +182,7 @@ def main():
         yolo_boxes = yolo_v3(image,
             overlap_threshold=overlap_threshold,
             confidence_threshold=confidence_threshold,
-            weights_path=weights_path)
+            weights_path=WEIGHTS_FILE)
         image3 = add_boxes(image, yolo_boxes)
         st.write('### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)' % \
             (overlap_threshold, confidence_threshold))

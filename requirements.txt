@@ -1,5 +1,2 @@
 streamlit==0.45.0
-altair==3.2.0
-numpy==1.17.1
 opencv-python==4.1.1.26
-pandas==0.25.1
