@@ -27,3 +27,8 @@ eggs/
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
+#########
+# VS Code
+######### 
+.vscode
+streamlit_demo/.vscode
