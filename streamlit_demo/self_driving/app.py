@@ -10,11 +10,13 @@ import time
 import tempfile
 import concurrent.futures
 import hashlib
+import argparse
+import cv2
 
-try:
-    from streamlit_demo.self_driving import yolov3
-except ModuleNotFoundError:
-    import yolov3
+# try:
+#     from streamlit_demo.self_driving import yolov3
+# except ModuleNotFoundError:
+#     import yolov3
 
 
 DATA_URL_ROOT = 'https://streamlit-self-driving.s3-us-west-2.amazonaws.com/'
@@ -28,20 +30,77 @@ LABEL_COLORS = {
 }
 
 WEIGHTS_FILE = 'yolov3.weights'
-WEIGHTS_URL = os.path.join('https://pjreddie.com/media/files', WEIGHTS_FILE)
-# WEIGTHS_MD5 = '3bcd6b390912c18924b46b26a9e7ff53'
-WEIGTHS_MD5 = 'c84e5b99d0e52cd466ae710cadf6d84c'
 
-def weights_downloaded():
-    if not os.path.exists(WEIGHTS_FILE):
+# load the COCO class labels our YOLO model was trained on
+LABELS_PATH = "coco.names"
+WEIGHTS_PATH = "yolov3.weights"
+my_path = os.path.abspath(os.path.dirname(__file__))
+CONFIG_PATH = os.path.join(my_path, "yolov3.cfg")
+
+# sorted?
+EXTERNAL_FILES = {
+    'yolov3.weights': {
+        'md5': 'c84e5b99d0e52cd466ae710cadf6d84c',
+        'url': 'https://pjreddie.com/media/files/yolov3.weights'
+    },
+    'yolov3-tiny.weights': {
+        'md5': '3bcd6b390912c18924b46b26a9e7ff53',
+        'url': 'https://pjreddie.com/media/files/yolov3-tiny.weights'
+    },
+    'coco.names': {
+        'md5': '8fc50561361f8bcf96b0177086e7616c',
+        'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names'
+    },
+    'yolov3.cfg': {
+        'md5': 'b969a43a848bbf26901643b833cfb96c',
+        'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg'
+    }
+}
+
+def file_downloaded(filename):
+    if not filename in EXTERNAL_FILES:
+        raise Exception('Unknown file: {}'.format(filename))
+    if not os.path.exists(filename):
         return False
-    with open(WEIGHTS_FILE, 'rb') as f:
+    with open(filename, 'rb') as f:
         m = hashlib.md5()
         m.update(f.read())
         print(m.digest())
-        if str(m.hexdigest()) != WEIGTHS_MD5:
+        if str(m.hexdigest()) != EXTERNAL_FILES[filename]['md5']:
             return False
     return True
+
+
+def download_file(filename):
+    try:
+        DOWNLOAD_MESSAGE = 'Downloading {}...'.format(filename)
+        title = st.markdown("""
+            # Self Driving Car Demo
+
+            Put some text here.
+            """)
+        weights_warning = st.warning(DOWNLOAD_MESSAGE)
+        progress_bar = st.progress(0)
+        with open(filename, 'wb') as fp:
+            with urllib.request.urlopen(EXTERNAL_FILES[filename]['url']) as response:
+                length = int(response.info()['Content-Length'])
+                counter = 0.0
+                while True:
+                    data = response.read(8192)
+                    if not data:
+                        break
+                    counter += len(data)
+                    progress = counter / length
+                    MEGABYTES = 2.0 ** -20.0
+                    weights_warning.warning('%s (%6.2f/%6.2f MB)' % \
+                        (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
+                    progress_bar.progress(progress if progress <= 1.0 else 1.0)
+                    fp.write(data)
+    finally:
+        title.empty()
+        weights_warning.empty()
+        progress_bar.empty()
+
 
 # st.cache allows us to reuse computation across runs, making Streamlit really fast.
 # This is a comman usage, where we load data from an endpoint once and then reuse
@@ -83,40 +142,10 @@ def add_boxes(image, boxes):
 def get_selected_frames(summary, label, min_elts, max_elts):
     return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
 
-def download_weights():
-    try:
-        DOWNLOAD_MESSAGE = 'Downloading weights...'
-        title = st.markdown("""
-            # Self Driving Car Demo
-            
-            Put some text here.
-            """)
-        weights_warning = st.warning(DOWNLOAD_MESSAGE)
-        progress_bar = st.progress(0)    
-        with open(WEIGHTS_FILE, 'wb') as fp:
-            with urllib.request.urlopen(WEIGHTS_URL) as response:
-                length = int(response.info()['Content-Length'])
-                print('info:', length)
-                counter = 0.0
-                while True:
-                    data = response.read(8192)
-                    if not data:
-                        break
-                    counter += len(data)
-                    progress = counter / length
-                    MEGABYTES = 2.0 ** -20.0
-                    weights_warning.warning('%s (%6.2f/%6.2f MB)' % \
-                        (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
-                    progress_bar.progress(progress if progress <= 1.0 else 1.0)
-                    fp.write(data)
-    finally:
-        title.empty()
-        weights_warning.empty()
-        progress_bar.empty()
-
 def main():
-    if not weights_downloaded():
-        download_weights()
+    for filename, info in EXTERNAL_FILES.items():
+        if not file_downloaded(filename):
+            download_file(filename)
 
     # print(weights_downloaded())
     metadata = load_metadata(LABELS_FILENAME)
@@ -163,7 +192,7 @@ def main():
         confidence_threshold = st.sidebar.slider('confidence_threshold', 0.0, 1.0, 0.5, 0.01)
         overlap_threshold = st.sidebar.slider('overlap threshold', 0.0, 1.0, 0.3, 0.01)
 
-        yolo_boxes = yolov3.yolo_v3(image,
+        yolo_boxes = yolo_v3(image,
             overlap_threshold=overlap_threshold,
             confidence_threshold=confidence_threshold,
             weights_path=weights_path)
@@ -173,4 +202,191 @@ def main():
         st.image(image3, use_column_width=True)
     else:
         st.warning('Click _Run Yolo Detection_ on the left to compare with ground truth.')
+
+@st.cache
+def get_labels_and_colors(labels_path):
+    labels = open(labels_path).read().strip().split("\n")
+
+    # initialize a list of colors to represent each possible class label
+    np.random.seed(42)
+    colors = np.random.randint(0, 255, size=(len(labels), 3),
+        dtype="uint8")
+
+    return labels, colors
+
+# load our YOLO object detector trained on COCO dataset (80 classes)
+@st.cache(ignore_hash=True)
+def load_network(config_path, weights_path):
+    net = cv2.dnn.readNetFromDarknet(config_path, weights_path)
+
+    # determine only the *output* layer names that we need from YOLO
+    output_layer_names = net.getLayerNames()
+    output_layer_names = [output_layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+    return net, output_layer_names
+
+def yolo_v3(image, confidence_threshold=0.5, overlap_threshold=0.3, weights_path=WEIGHTS_PATH, config_path=CONFIG_PATH):
+    # Load the network. Because this is cached it will only happen once.
+    net, output_layer_names = load_network(config_path, weights_path)
+
+    # load our input image and grab its spatial dimensions
+    H, W = image.shape[:2]
+
+    # construct a blob from the input image and then perform a forward
+    # pass of the YOLO object detector, giving us our bounding boxes and
+    # associated probabilities
+    blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+    net.setInput(blob)
+    layer_outputs = net.forward(output_layer_names)
+
+    # initialize our lists of detected bounding boxes, confidences, and
+    # class IDs, respectively
+    boxes = []
+    confidences = []
+    class_IDs = []
+
+    # loop over each of the layer outputs
+    for output in layer_outputs:
+        # loop over each of the detections
+        for detection in output:
+            # extract the class ID and confidence (i.e., probability) of
+            # the current object detection
+            scores = detection[5:]
+            classID = np.argmax(scores)
+            confidence = scores[classID]
+
+            # filter out weak predictions by ensuring the detected
+            # probability is greater than the minimum probability
+            if confidence > confidence_threshold:
+                # scale the bounding box coordinates back relative to the
+                # size of the image, keeping in mind that YOLO actually
+                # returns the center (x, y)-coordinates of the bounding
+                # box followed by the boxes' width and height
+                box = detection[0:4] * np.array([W, H, W, H])
+                (centerX, centerY, width, height) = box.astype("int")
+
+                # use the center (x, y)-coordinates to derive the top and
+                # and left corner of the bounding box
+                x = int(centerX - (width / 2))
+                y = int(centerY - (height / 2))
+
+                # update our list of bounding box coordinates, confidences,
+                # and class IDs
+                boxes.append([x, y, int(width), int(height)])
+                confidences.append(float(confidence))
+                class_IDs.append(classID)
+
+    # apply non-maxima suppression to suppress weak, overlapping bounding
+    # boxes
+    idxs = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold,
+        overlap_threshold)
+
+    new_labels = [
+        'pedestrian', #person
+        'biker', # bicycle'
+        'car', #car
+        'biker', #motorbike
+        None, # aeroplane
+        'truck', #bus
+        None, #train
+        'truck', #truck
+        None, # boat
+        'trafficLight', # traffic light
+        None, # fire hydrant
+        None, # stop sign
+        None, # parking meter
+        None, # bench
+        None, # bird
+        None, # cat
+        None, # dog
+        None, # horse
+        None, # sheep
+        None, # cow
+        None, # elephant
+        None, # bear
+        None, # zebra
+        None, # giraffe
+        None, # backpack
+        None, # umbrella
+        None, # handbag
+        None, # tie
+        None, # suitcase
+        None, # frisbee
+        None, # skis
+        None, # snowboard
+        None, # sports ball
+        None, # kite
+        None, # baseball bat
+        None, # baseball glove
+        None, # skateboard
+        None, # surfboard
+        None, # tennis racket
+        None, # bottle
+        None, # wine glass
+        None, # cup
+        None, # fork
+        None, # knife
+        None, # spoon
+        None, # bowl
+        None, # banana
+        None, # apple
+        None, # sandwich
+        None, # orange
+        None, # broccoli
+        None, # carrot
+        None, # hot dog
+        None, # pizza
+        None, # donut
+        None, # cake
+        None, # chair
+        None, # sofa
+        None, # pottedplant
+        None, # bed
+        None, # diningtable
+        None, # toilet
+        None, # tvmonitor
+        None, #
+        None, # mouse
+        None, # remote
+        None, # keyboard
+        None, # cell phone
+        None, # microwave
+        None, # oven
+        None, # toaster
+        None, # sink
+        None, # refrigerator
+        None, # book
+        None, # clock
+        None, # vase
+        None, # scissors
+        None, # teddy bear
+        None, # hair drier
+        None, # toothbrush
+    ]
+
+    # ensure at least one detection exists
+    xmin, xmax, ymin, ymax, labels = [], [], [], [], []
+    if len(idxs) > 0:
+        # loop over the indexes we are keeping
+        for i in idxs.flatten():
+            label = new_labels[class_IDs[i]]
+            if label == None:
+                continue
+
+                # extract the bounding box coordinates
+            (x, y) = (boxes[i][0], boxes[i][1])
+            (w, h) = (boxes[i][2], boxes[i][3])
+
+            xmin.append(x)
+            ymin.append(y)
+            xmax.append(x+w)
+            ymax.append(y+h)
+            labels.append(label)
+
+    return pd.DataFrame({
+        'xmin': xmin,
+        'ymin': ymin,
+        'xmax': xmax,
+        'ymax': ymax,
+        'labels': labels
+    })
 
