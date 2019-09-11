@@ -34,21 +34,7 @@ from collections import OrderedDict
 # Udacity dataset: https://github.com/udacity/self-driving-car  #
 # Streamlit: https://github.com/streamlit/streamlit             #
 #                                                               #
-# Description:                                                  #
-# The demo runs the YOLO object detection on images from the    #
-# Udacity dataset. The demo allows the user to select images    #
-# it shows a reference 'ground image' and an image with the     #
-# detected objects.                                             #
-# The demo generates a Streamlit app with the following main    #
-# characteristics:                                              #
-# - Needed data files are downloaded from the internet.         #
-# - A sidebar allows a user to selects important parameters.    #
-# - A ground image with boxes representing the objects detected #
-# by a uman is shown.                                           #
-# - The same image with boxes computed by running the YOLO      #
-# model is shown for easy comparison.                           #
-# - Some parameters of the YOLO model can be tuned by the use   #
-# of silders.                                                   #
+# See REAME.md for more details                                 #
 #################################################################
 
 
@@ -86,6 +72,8 @@ LABEL_COLORS = {
 }
 
 
+#################
+#   Functions   #
 #################
 
 # Check if file has been downloaded.
