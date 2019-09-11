@@ -27,9 +27,10 @@ LABEL_COLORS = {
     'biker': [255, 0, 255],
 }
 
-WEIGHTS_FILE = 'yolov3-tiny.weights'
+WEIGHTS_FILE = 'yolov3.weights'
 WEIGHTS_URL = os.path.join('https://pjreddie.com/media/files', WEIGHTS_FILE)
-WEIGTHS_MD5 = '3bcd6b390912c18924b46b26a9e7ff53'
+# WEIGTHS_MD5 = '3bcd6b390912c18924b46b26a9e7ff53'
+WEIGTHS_MD5 = 'c84e5b99d0e52cd466ae710cadf6d84c'
 
 def check_weights_hash():
     if not os.path.exists(WEIGHTS_FILE):
