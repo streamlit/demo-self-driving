@@ -1,39 +1,6 @@
-########################################################################
-# Python - https://github.com/github/gitignore/blob/master/Python.gitignore
-########################################################################
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Distribution / packaging
-build/
-dist/
-eggs/
-.eggs/
-*.egg-info/
-*.egg
-
-
-########################################################################
-# OSX - https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
-########################################################################
-.DS_Store
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-#########
-# VS Code
-######### 
-.vscode
-streamlit_demo/.vscode
-
-######
-# Yolo
-######
 yolov3.weights
+yolov3.cfg
+coco.names
