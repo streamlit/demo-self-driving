@@ -144,7 +144,7 @@ def create_summary(metadata):
     return summary
 
 # This function loads an image from Streamlit public repo on S3.
-@st.cache  #(show_spinner=False)
+@st.cache(show_spinner=False)
 def load_image(url):
     with urllib.request.urlopen(url) as response:
         image = np.asarray(bytearray(response.read()), dtype="uint8")
