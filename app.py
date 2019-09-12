@@ -27,14 +27,14 @@ from collections import OrderedDict
 #################################################################
 # Available at https://github.com/streamlit/demo-self-driving   #
 #                                                               #
-# Demo of Yolov3 real-time object detection with Streamlit on   #                                                            #
+# Demo of Yolov3 real-time object detection with Streamlit on   #
 # the Udacity self-driving-car dataset.                         #
 #                                                               #
 # Yolo: https://pjreddie.com/darknet/yolo/                      #
 # Udacity dataset: https://github.com/udacity/self-driving-car  #
 # Streamlit: https://github.com/streamlit/streamlit             #
 #                                                               #
-# See REAME.md for more details                                 #
+# See README.md for more details                                 #
 #################################################################
 
 
@@ -60,6 +60,11 @@ EXTERNAL_FILES = OrderedDict({
     'yolov3.cfg': {
         'md5': 'b969a43a848bbf26901643b833cfb96c',
         'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg'
+    },
+    'README.md': {
+        'md5': '2e0a414786a8459ac42e3eb3c579afa5',
+        # Remove token once the repo is public
+        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md?token=ABUBK4KNY6EDGGZ4KVX3CH25QP3PG'
     }
 })
 
@@ -76,7 +81,7 @@ LABEL_COLORS = {
 #   Functions   #
 #################
 
-# Check if file has been downloaded.
+# Check if file has been downloaded. It uses the md5 in EXTERNAL_FILES to check if the file has been downloaded.
 def file_downloaded(file_path):
     if file_path not in EXTERNAL_FILES:
         raise Exception('Unknown file: %s' % file_path)
@@ -90,8 +95,7 @@ def file_downloaded(file_path):
     return True
 
 
-# Download a file. Report progress using st.progress that draws a progress bar on the
-# Streamlit UI.
+# Download a file. Report progress using st.progress that draws a progress bar on the Streamlit UI.
 def download_file(file_path):
     if file_path not in EXTERNAL_FILES:
         raise Exception('Unknown file: %s' % file_path)
@@ -100,7 +104,7 @@ def download_file(file_path):
         title = st.markdown("""
             # Self Driving Car Demo
 
-            Put some text here.
+            YOLO real-time object detection with Streamlit on the Udacity self-driving-car dataset.
             """)
         weights_warning = st.warning(DOWNLOAD_MESSAGE)
         progress_bar = st.progress(0)
@@ -115,8 +119,8 @@ def download_file(file_path):
                     counter += len(data)
                     progress = counter / length
                     MEGABYTES = 2.0 ** -20.0
-                    weights_warning.warning('%s (%6.2f/%6.2f MB)' % \
-                        (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
+                    weights_warning.warning('%s (%6.2f/%6.2f MB)' %
+                                            (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
                     progress_bar.progress(progress if progress <= 1.0 else 1.0)
                     fp.write(data)
     finally:
@@ -134,7 +138,7 @@ def load_metadata(url):
     return metadata
 
 # An amazing property of st.cache'ed functions is that you can pipe them into
-# each other, creating a computaiton DAG (directed acyclic graph). Streamlit
+# each other, creating a computation DAG (directed acyclic graph). Streamlit
 # automatically recomputes only the *subset* of the DAG required to get the
 # right answer!
 @st.cache
@@ -143,16 +147,19 @@ def create_summary(metadata):
     summary = one_hot_encoded.groupby(['frame']).sum()
     return summary
 
-# This function loads an image from Streamlit public repo on S3.
+# This function loads an image from Streamlit public repo on S3. We use st.cache on this
+# function as well, so we can reuse the images across runs.
 @st.cache(show_spinner=False)
 def load_image(url):
     with urllib.request.urlopen(url) as response:
         image = np.asarray(bytearray(response.read()), dtype="uint8")
     image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    image = image[:,:,[2,1,0]] # BGR -> RGB
+    image = image[:, :, [2, 1, 0]] # BGR -> RGB
     return image
 
-# Add boxes to an image
+
+# This function add the boxes of the detected objects to an image.
+# It returns an image with the added boxes.
 def add_boxes(image, boxes):
     image = image.astype(np.float64)
     for _, (xmin, ymin, xmax, ymax, label) in boxes.iterrows():
@@ -161,22 +168,10 @@ def add_boxes(image, boxes):
     return image.astype(np.uint8)
 
 
+# This function select frames from the summary based on label, min_elts, and max_elts
 @st.cache
 def get_selected_frames(summary, label, min_elts, max_elts):
     return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
-
-
-@st.cache
-def get_labels_and_colors(labels_path):
-    labels = open(labels_path).read().strip().split("\n")
-
-    # initialize a list of colors to represent each possible class label
-    np.random.seed(42)
-    colors = np.random.randint(0, 255, size=(len(labels), 3),
-        dtype="uint8")
-
-    return labels, colors
-
 
 # Load our YOLO object detector trained on COCO dataset (80 classes).
 @st.cache(ignore_hash=True)
@@ -365,6 +360,13 @@ def yolo_v3(image,
 # Main #
 ########
 def main():
+    # Show the README as the first thing
+    st.sidebar.title('About')
+    if st.sidebar.checkbox('Show the README', True):
+        with open('README.md', 'r') as fp:
+            st.markdown(fp.read())
+        return
+
     # Download data files
     for file, info in EXTERNAL_FILES.items():
         if not file_downloaded(file):
@@ -388,7 +390,6 @@ def main():
         st.error('No frames fit the criteria. 😳 Please select different label or number. ✌️')
         return
 
-    frames = metadata.frame.unique()
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
 
     # Select a frame out of the selecte frames.
