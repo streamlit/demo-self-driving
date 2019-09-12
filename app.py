@@ -23,12 +23,12 @@ import cv2
 from collections import OrderedDict
 
 #################################################################
-# Self-driving car Demo                                         #
+# Self-driving car demo                                         #
 #################################################################
 # Available at https://github.com/streamlit/demo-self-driving   #
 #                                                               #
-# Demo of Yolov3 Real-Time Object Detection with Streamlit on   #                                                            #
-# the Udacity Self-driving-car dataset.                         #
+# Demo of Yolov3 real-time object detection with Streamlit on   #                                                            #
+# the Udacity self-driving-car dataset.                         #
 #                                                               #
 # Yolo: https://pjreddie.com/darknet/yolo/                      #
 # Udacity dataset: https://github.com/udacity/self-driving-car  #
