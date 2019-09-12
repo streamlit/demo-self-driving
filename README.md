@@ -31,12 +31,19 @@ streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/mast
 The `streamlit` command opens a browser window and automatically starts the app.
 
 ## How to use the app
-Once the app has started, you will see it consists in a sidebar and a main column.
-You can tweak the parameters in the sidebar and use the main column to see how this affects the image
-selection and the outcome on the YOLO model. This is where the app shows the ground image and
-the results of the YOLO model run.
-You can use the sliders and the picker in the sidebar to select an image. The app will show the
-ground image in the main column and it will prompt you to run the YOLO model. You can do this by unchecking
-the checkbox that now appears in the sidebar. Once you uncheck the checkbox, YOLO will run and an image with
-the objects detected by YOLO will be shown. You can compare this image with the ground image and, by tweaking
-the model parameters in the sidebar, see if you can get the two images to match.
+The app consists of a sidebar, used mostly for controls and a main column that shows content.
+
+The first thing that you will see once the app has started is the README in the main column and a checkbox in the
+sidebar. You can use the checkbox to hide the README. At any time, you can go back to the README by checking the 
+checkbox. 
+
+When you dismiss the README, some controls will appear in the sidebar. These controls allow you to select a frame
+to show in the main column as _ground image_. Tweak the controls and see how different ground images
+are shown. For example, select the `label_pedestrian` in the `label` picker. Tune the minimum and
+maximum values on `label_pedestrian` slider to `10.0` and `20.0`, respectively, and just pick any frame by sliding the
+`label_pedestrian frame` slider.
+
+At this point, the app shows the ground image in the main column and prompts you to run the YOLO model. 
+You can do this by unchecking the checkbox that now appears in the sidebar. Once you uncheck the checkbox, 
+YOLO will run and an image with the objects detected by YOLO will be shown. You can compare this image with 
+the ground image and, by tweaking the model parameters in the sidebar and see if you can get the two images to match!
