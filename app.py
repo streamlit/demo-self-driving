@@ -62,7 +62,7 @@ EXTERNAL_FILES = OrderedDict({
         'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg'
     },
     'README.md': {
-        'md5': '2e0a414786a8459ac42e3eb3c579afa5',
+        'md5': None,
         # Remove token once the repo is public
         'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md?token=ABUBK4KNY6EDGGZ4KVX3CH25QP3PG'
     }
@@ -87,10 +87,13 @@ def file_downloaded(file_path):
         raise Exception('Unknown file: %s' % file_path)
     if not os.path.exists(file_path):
         return False
+    expected_hash = EXTERNAL_FILES[file_path]['md5']
+    if expected_hash is None:
+        return True
     with open(file_path, 'rb') as f:
         m = hashlib.md5()
         m.update(f.read())
-        if str(m.hexdigest()) != EXTERNAL_FILES[file_path]['md5']:
+        if str(m.hexdigest()) != expected_hash:
             return False
     return True
 
@@ -100,13 +103,13 @@ def download_file(file_path):
     if file_path not in EXTERNAL_FILES:
         raise Exception('Unknown file: %s' % file_path)
     try:
-        DOWNLOAD_MESSAGE = 'Downloading %s...' % file_path
+        download_message= 'Downloading %s...' % file_path
         title = st.markdown("""
             # Self Driving Car Demo
 
             YOLO real-time object detection with Streamlit on the Udacity self-driving-car dataset.
             """)
-        weights_warning = st.warning(DOWNLOAD_MESSAGE)
+        weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
         with open(file_path, 'wb') as fp:
             with urllib.request.urlopen(EXTERNAL_FILES[file_path]['url']) as response:
@@ -120,7 +123,7 @@ def download_file(file_path):
                     progress = counter / length
                     MEGABYTES = 2.0 ** -20.0
                     weights_warning.warning('%s (%6.2f/%6.2f MB)' %
-                                            (DOWNLOAD_MESSAGE, counter * MEGABYTES, length * MEGABYTES))
+                                            (download_message, counter * MEGABYTES, length * MEGABYTES))
                     progress_bar.progress(progress if progress <= 1.0 else 1.0)
                     fp.write(data)
     finally:
@@ -245,88 +248,19 @@ def yolo_v3(image,
     idxs = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold,
         overlap_threshold)
 
-    new_labels = [
-        'pedestrian', #person
-        'biker', # bicycle'
-        'car', #car
-        'biker', #motorbike
-        None, # aeroplane
-        'truck', #bus
-        None, #train
-        'truck', #truck
-        None, # boat
-        'trafficLight', # traffic light
-        None, # fire hydrant
-        None, # stop sign
-        None, # parking meter
-        None, # bench
-        None, # bird
-        None, # cat
-        None, # dog
-        None, # horse
-        None, # sheep
-        None, # cow
-        None, # elephant
-        None, # bear
-        None, # zebra
-        None, # giraffe
-        None, # backpack
-        None, # umbrella
-        None, # handbag
-        None, # tie
-        None, # suitcase
-        None, # frisbee
-        None, # skis
-        None, # snowboard
-        None, # sports ball
-        None, # kite
-        None, # baseball bat
-        None, # baseball glove
-        None, # skateboard
-        None, # surfboard
-        None, # tennis racket
-        None, # bottle
-        None, # wine glass
-        None, # cup
-        None, # fork
-        None, # knife
-        None, # spoon
-        None, # bowl
-        None, # banana
-        None, # apple
-        None, # sandwich
-        None, # orange
-        None, # broccoli
-        None, # carrot
-        None, # hot dog
-        None, # pizza
-        None, # donut
-        None, # cake
-        None, # chair
-        None, # sofa
-        None, # pottedplant
-        None, # bed
-        None, # diningtable
-        None, # toilet
-        None, # tvmonitor
-        None, #
-        None, # mouse
-        None, # remote
-        None, # keyboard
-        None, # cell phone
-        None, # microwave
-        None, # oven
-        None, # toaster
-        None, # sink
-        None, # refrigerator
-        None, # book
-        None, # clock
-        None, # vase
-        None, # scissors
-        None, # teddy bear
-        None, # hair drier
-        None, # toothbrush
-    ]
+    # remap labels
+    new_labels = [None, ] * 80
+    for e in [
+        (0, 'pedestrian'),
+        (1, 'biker'),
+        (2, 'car'),
+        (3, 'biker'),
+        (5, 'truck'),
+        (7, 'truck'),
+        (9, 'trafficLight'),
+
+    ]:
+        new_labels[e[0]] = e[1]
 
     # ensure at least one detection exists
     xmin, xmax, ymin, ymax, labels = [], [], [], [], []
@@ -336,8 +270,9 @@ def yolo_v3(image,
             label = new_labels[class_IDs[i]]
             if label is None:
                 continue
+            label = new_labels[class_IDs[i]]
 
-                # extract the bounding box coordinates
+            # extract the bounding box coordinates
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
@@ -360,24 +295,27 @@ def yolo_v3(image,
 # Main #
 ########
 def main():
-    # Show the README as the first thing
+    # Download data files
+    for file, info in EXTERNAL_FILES.items():
+        if not file_downloaded(file):
+            download_file(file)
+
+    # Do some more preparation by loading metadata from S3...
+    metadata = load_metadata(LABELS_FILENAME)
+    # ... and creating a summary our of the metadata
+    summary = create_summary(metadata)
+
+    # Show the README if the checkbox is checked. The checkbox is checked by default,
+    # which means that the first time the app runs the README is shown on the screen.
+    # Note that the checkbox is in a sidebar under the title 'About'
     st.sidebar.title('About')
     if st.sidebar.checkbox('Show the README', True):
         with open('README.md', 'r') as fp:
             st.markdown(fp.read())
         return
 
-    # Download data files
-    for file, info in EXTERNAL_FILES.items():
-        if not file_downloaded(file):
-            download_file(file)
-
-    # Load metadata from S3
-    metadata = load_metadata(LABELS_FILENAME)
-    # Create a summary our of the metadata
-    summary = create_summary(metadata)
-
-    # Draw the sidebar
+    # Draw the sidebar for the selection of the frame. This will allow us to select a frame
+    # for the object detection
     st.sidebar.title('Frame')
     # Draw a picker for the labels
     label = st.sidebar.selectbox('label', summary.columns)
@@ -392,27 +330,29 @@ def main():
 
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
 
-    # Select a frame out of the selecte frames.
+    # Select a frame out of the selected frames.
     selected_frame_index = st.sidebar.slider(label + ' frame', 0, len(selected_frames) - 1, 0)
     selected_frame = selected_frames[selected_frame_index]
     # Compose the image url for the frame
     image_url = os.path.join(DATA_URL_ROOT, selected_frame)
-    # load the image
+    # Load the image from S3
     image = load_image(image_url)
 
-    # Add boxes for objects on the image as an Altair layer. These are the boxes for the ground image.
+    # Draw an altair chart in the sidebar with information on the frame
     chart = alt.Chart(objects_per_frame, height=120).mark_area().encode(
         alt.X('index:Q', scale=alt.Scale(nice=False)),
         alt.Y('%s:Q' % label))
     selected_frame_df = pd.DataFrame({'selected_frame': [selected_frame_index]})
     vline = alt.Chart(selected_frame_df).mark_rule(color='red').encode(
-        alt.X('selected_frame:Q',axis=None)
+        alt.X('selected_frame:Q', axis=None)
     )
     st.sidebar.altair_chart(alt.layer(chart, vline))
+
+    # Add boxes for objects on the image. These are the boxes for the ground image.
     boxes = metadata[metadata.frame == selected_frame].drop(columns=['frame'])
 
     # Create an header for the ground image
-    st.write("### Ground Truth `%i`/`%i` : `%s`" % (selected_frame_index, len(selected_frames), selected_frame))
+    st.write("### Ground Truth `%i`/`%i`" % (selected_frame_index, len(selected_frames)))
 
     # Draw the ground image with the boxes that show the objects
     image_with_boxes = add_boxes(image, boxes)
@@ -425,21 +365,21 @@ def main():
 
     # Draw a checkbox and depending on the user's choice either run the model ot show a warning.
     if st.sidebar.checkbox('Run Yolo Detection', False):
-        # This block runs the YOLO model
-        # Add two sliders in the sidebar for confidence threshold and overlap threshold
-        # These are parameters of the models. Whe the user changes these sliders, the model re-runs.
+        # This block of code runs the YOLO model.
+        # It also adds two sliders in the sidebar for confidence threshold and overlap threshold.
+        # These are parameters of the models. When the user changes these sliders, the model re-runs.
         confidence_threshold = st.sidebar.slider('confidence_threshold', 0.0, 1.0, 0.5, 0.01)
         overlap_threshold = st.sidebar.slider('overlap threshold', 0.0, 1.0, 0.3, 0.01)
 
         # Get the boxes for the objects detected by YOLO by running the YOLO model.
         yolo_boxes = yolo_v3(image,
-            overlap_threshold=overlap_threshold,
-            confidence_threshold=confidence_threshold)
+                             overlap_threshold=overlap_threshold,
+                             confidence_threshold=confidence_threshold)
         # Add the boxes to the image.
         image_yolo = add_boxes(image, yolo_boxes)
         # Add an header
-        st.write('### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)' % \
-            (overlap_threshold, confidence_threshold))
+        st.write('### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)' %
+                 (overlap_threshold, confidence_threshold))
         # Draw the image with the boxes computed by YOLO. This image has the detected objects.
         st.image(image_yolo, use_column_width=True)
     else:
