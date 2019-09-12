@@ -12,15 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import streamlit as st
-import altair as alt
-import pandas as pd
-import numpy as np
-import os
-import urllib
-import hashlib
-import cv2
-from collections import OrderedDict
 
 #################################################################
 # Self-driving car demo                                         #
@@ -37,6 +28,16 @@ from collections import OrderedDict
 # See README.md for more details                                 #
 #################################################################
 
+
+import streamlit as st
+import altair as alt
+import pandas as pd
+import numpy as np
+import os
+import urllib
+import hashlib
+import cv2
+from collections import OrderedDict
 
 #################
 #   Constants   #
