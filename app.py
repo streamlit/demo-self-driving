@@ -72,6 +72,8 @@ EXTERNAL_FILES = OrderedDict({
     }
 })
 
+APP_DATA_FILES = ['yolov3.weights', 'coco.names', 'yolov3.cfg']
+
 LABEL_COLORS = {
     'car': [255, 0, 0],
     'pedestrian': [0, 255, 0],
@@ -109,7 +111,7 @@ def download_file(file_path):
     try:
         download_message= 'Downloading %s...' % file_path
         title = st.markdown("""
-            ## Getting data files.
+            ## Getting data files
             """)
         weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
@@ -134,6 +136,35 @@ def download_file(file_path):
         progress_bar.empty()
 
 
+def preamble():
+    # Select box to choose whether to show the README, the source code, or run the app
+    # Note that the checkbox is in a sidebar under the title 'About'
+    st.sidebar.title('About')
+    option = st.sidebar.selectbox('Choose', ['README', 'Code', 'App'], 0)
+    st.sidebar.markdown('[Github repo](https://github.com/streamlit/streamlit)')
+    if option == 'README':
+        if not file_downloaded('README.md'):
+            download_file('README.md')
+        with open('README.md', 'r') as fp:
+            st.markdown(fp.read() + '\n\n')
+            # Download data files
+            for file in APP_DATA_FILES:
+                if file != 'README.md' and not file_downloaded(file):
+                    download_file(file)
+        return False
+    elif option == 'Code':
+        if not file_downloaded('app.py'):
+            download_file('app.py')
+        with open('app.py', 'r') as fp:
+            st.code(fp.read())
+        return False
+
+    # Download data files if they have not been downloaded yet
+    for file in APP_DATA_FILES:
+        if file != 'README.md' and not file_downloaded(file):
+            download_file(file)
+
+    return True
 # st.cache allows us to reuse computation across runs, making Streamlit really fast.
 # This is a comman usage, where we load data from an endpoint once and then reuse
 # it across runs.
@@ -297,33 +328,9 @@ def yolo_v3(image,
 # Main #
 ########
 def main():
-    if not file_downloaded('README.md'):
-        download_file('README.md')
-
-    # Show the README if the checkbox is checked. The checkbox is checked by default,
-    # which means that the first time the app runs the README is shown on the screen.
-    # Note that the checkbox is in a sidebar under the title 'About'
-    st.sidebar.title('About')
-    option = st.sidebar.selectbox('Mode', ['README', 'Code', 'App'], 0)
-    st.sidebar.markdown('[Github repo](https://github.com/streamlit/streamlit)')
-    if option == 'README':
-        with open('README.md', 'r') as fp:
-            st.markdown(fp.read() + '\n\n')
-
-            # Download data files
-            for file, info in EXTERNAL_FILES.items():
-                if file != 'README.md' and not file_downloaded(file):
-                    download_file(file)
+    # Preamble to the app (show code, README, download files)
+    if not preamble():
         return
-    elif option == 'Code':
-        with open('app.py', 'r') as fp:
-            st.code(fp.read())
-        return
-
-    # Download data files if they have not been downloaded yet
-    for file, info in EXTERNAL_FILES.items():
-        if file != 'README.md' and not file_downloaded(file):
-            download_file(file)
 
     # Do some preparation by loading metadata from S3...
     metadata = load_metadata(LABELS_FILENAME)
