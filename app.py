@@ -109,9 +109,7 @@ def download_file(file_path):
     try:
         download_message= 'Downloading %s...' % file_path
         title = st.markdown("""
-            # Self Driving Car Demo
-
-            YOLO real-time object detection with Streamlit on the Udacity self-driving-car dataset.
+            ## Getting data files.
             """)
         weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
