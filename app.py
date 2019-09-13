@@ -64,8 +64,11 @@ EXTERNAL_FILES = OrderedDict({
     },
     'README.md': {
         'md5': None,
-        # Remove token once the repo is public
-        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md?token=ABUBK4KNY6EDGGZ4KVX3CH25QP3PG'
+        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md'
+    },
+    'app.py': {
+        'md5': None,
+        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py'
     }
 })
 
@@ -296,32 +299,46 @@ def yolo_v3(image,
 # Main #
 ########
 def main():
-    # Download data files
-    for file, info in EXTERNAL_FILES.items():
-        if not file_downloaded(file):
-            download_file(file)
-
-    # Do some more preparation by loading metadata from S3...
-    metadata = load_metadata(LABELS_FILENAME)
-    # ... and creating a summary our of the metadata
-    summary = create_summary(metadata)
+    if not file_downloaded('README.md'):
+        download_file('README.md')
 
     # Show the README if the checkbox is checked. The checkbox is checked by default,
     # which means that the first time the app runs the README is shown on the screen.
     # Note that the checkbox is in a sidebar under the title 'About'
     st.sidebar.title('About')
-    if st.sidebar.checkbox('Show the README', True):
+    option = st.sidebar.selectbox('Mode', ['README', 'Code', 'App'], 0)
+    st.sidebar.markdown('[Github repo](https://github.com/streamlit/streamlit)')
+    if option == 'README':
         with open('README.md', 'r') as fp:
-            st.markdown(fp.read())
+            st.markdown(fp.read() + '\n\n')
+
+            # Download data files
+            for file, info in EXTERNAL_FILES.items():
+                if file != 'README.md' and not file_downloaded(file):
+                    download_file(file)
         return
+    elif option == 'Code':
+        with open('app.py', 'r') as fp:
+            st.code(fp.read())
+        return
+
+    # Download data files if they have not been downloaded yet
+    for file, info in EXTERNAL_FILES.items():
+        if file != 'README.md' and not file_downloaded(file):
+            download_file(file)
+
+    # Do some preparation by loading metadata from S3...
+    metadata = load_metadata(LABELS_FILENAME)
+    # ... and creating a summary our of the metadata
+    summary = create_summary(metadata)
 
     # Draw the sidebar for the selection of the frame. This will allow us to select a frame
     # for the object detection
     st.sidebar.title('Frame')
-    # Draw a picker for the labels
-    label = st.sidebar.selectbox('label', summary.columns)
-    # Draw a slider
-    min_elts, max_elts = st.sidebar.slider(label, 0, 25, [10, 20])
+    # Draw a selection box for the labels
+    label = 'label_%s' % st.sidebar.selectbox('Pick a label', [x[6:] for x in summary.columns], 2)
+    # Draw a slider to select a range of objects we want in the image
+    min_elts, max_elts = st.sidebar.slider('How many %ss (select a range)?' % label[6:], 0, 25, [10, 20])
 
     # Select frames based on the selection in the sidebar
     selected_frames = get_selected_frames(summary, label, min_elts, max_elts)
@@ -331,8 +348,8 @@ def main():
 
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
 
-    # Select a frame out of the selected frames.
-    selected_frame_index = st.sidebar.slider(label + ' frame', 0, len(selected_frames) - 1, 0)
+    # Choose a frame out of the selected frames.
+    selected_frame_index = st.sidebar.slider('Choose a frame', 0, len(selected_frames) - 1, 0)
     selected_frame = selected_frames[selected_frame_index]
     # Compose the image url for the frame
     image_url = os.path.join(DATA_URL_ROOT, selected_frame)
@@ -353,7 +370,7 @@ def main():
     boxes = metadata[metadata.frame == selected_frame].drop(columns=['frame'])
 
     # Create an header for the ground image
-    st.write("### Ground Truth `%i`/`%i`" % (selected_frame_index, len(selected_frames)))
+    st.write("### Ground Truth (frame #`%i`)" % selected_frame_index)
 
     # Draw the ground image with the boxes that show the objects
     image_with_boxes = add_boxes(image, boxes)
