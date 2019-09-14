@@ -136,13 +136,22 @@ def download_file(file_path):
         progress_bar.empty()
 
 
+# The preamble shows the README or the source code of the app and takes care of downloading the data files
 def preamble():
     # Select box to choose whether to show the README, the source code, or run the app
-    # Note that the checkbox is in a sidebar under the title 'About'
-    st.sidebar.title('About')
-    option = st.sidebar.selectbox('Choose', ['README', 'Code', 'App'], 0)
-    st.sidebar.markdown('[Github repo](https://github.com/streamlit/streamlit)')
-    if option == 'README':
+    # Note that the select is in a sidebar under the title 'About'. We also select option 0
+    # to be the default and we pass in a function to format the labels to our liking.
+    st.sidebar.title('Choose what to do')
+    option = st.sidebar.selectbox(
+        '',
+        ['readme', 'code', 'app'],
+        0,
+        lambda opt: {
+            'readme': 'Show the readme',
+            'code': 'Show the source code',
+            'app': 'Run the App'
+        }[opt])
+    if option == 'readme':
         if not file_downloaded('README.md'):
             download_file('README.md')
         with open('README.md', 'r') as fp:
@@ -152,7 +161,7 @@ def preamble():
                 if file != 'README.md' and not file_downloaded(file):
                     download_file(file)
         return False
-    elif option == 'Code':
+    elif option == 'code':
         if not file_downloaded('app.py'):
             download_file('app.py')
         with open('app.py', 'r') as fp:
@@ -340,10 +349,25 @@ def main():
     # Draw the sidebar for the selection of the frame. This will allow us to select a frame
     # for the object detection
     st.sidebar.title('Frame')
+
+    # Formatter for the labels
+    def formatter(label):
+        return {
+            'label_biker': 'biker',
+            'label_car': 'car',
+            'label_pedestrian': 'pedestrian',
+            'label_trafficLight': 'traffic light',
+            'label_truck': 'truck'
+        }[label]
     # Draw a selection box for the labels
-    label = 'label_%s' % st.sidebar.selectbox('Pick a label', [x[6:] for x in summary.columns], 2)
+    label = st.sidebar.selectbox(
+        'Pick a label',
+        summary.columns,
+        2,
+        formatter
+    )
     # Draw a slider to select a range of objects we want in the image
-    min_elts, max_elts = st.sidebar.slider('How many %ss (select a range)?' % label[6:], 0, 25, [10, 20])
+    min_elts, max_elts = st.sidebar.slider('How many %ss (select a range)?' % formatter(label), 0, 25, [10, 20])
 
     # Select frames based on the selection in the sidebar
     selected_frames = get_selected_frames(summary, label, min_elts, max_elts)
@@ -354,7 +378,7 @@ def main():
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
 
     # Choose a frame out of the selected frames.
-    selected_frame_index = st.sidebar.slider('Choose a frame', 0, len(selected_frames) - 1, 0)
+    selected_frame_index = st.sidebar.slider('Choose a frame (index)', 0, len(selected_frames) - 1, 0)
     selected_frame = selected_frames[selected_frame_index]
     # Compose the image url for the frame
     image_url = os.path.join(DATA_URL_ROOT, selected_frame)
@@ -391,8 +415,8 @@ def main():
         # This block of code runs the YOLO model.
         # It also adds two sliders in the sidebar for confidence threshold and overlap threshold.
         # These are parameters of the models. When the user changes these sliders, the model re-runs.
-        confidence_threshold = st.sidebar.slider('confidence_threshold', 0.0, 1.0, 0.5, 0.01)
-        overlap_threshold = st.sidebar.slider('overlap threshold', 0.0, 1.0, 0.3, 0.01)
+        confidence_threshold = st.sidebar.slider('Confidence threshold', 0.0, 1.0, 0.5, 0.01)
+        overlap_threshold = st.sidebar.slider('Overlap threshold', 0.0, 1.0, 0.3, 0.01)
 
         # Get the boxes for the objects detected by YOLO by running the YOLO model.
         yolo_boxes = yolo_v3(image,
