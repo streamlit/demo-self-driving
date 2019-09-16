@@ -24,7 +24,7 @@ as well.
 
 ## How to run this demo
 ```
-pip install streamlit opencv-python
+pip install -r requirements.txt
 streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
 ```
 
@@ -41,9 +41,12 @@ a frame to show in the main column as _ground image_. Tweak the controls and see
 are shown. For example, select `pedestrian` in the picker. Tune the minimum and
 maximum values in the `How many pedestrians` slider to `10.0` and `20.0`, respectively, and just pick any frame 
 by sliding the `Choose a frame` slider. This means that you want to select an image with _pedestrians_ and you want between
-10 and 20 of them. The _frame_ slider allows you to select a single frame - i.e. an image - out of the images satifying the above criteria. A small chart below the slider shows how many of the target objects (_pedestrians_ in this case) for each frame and a red vertical line highlights the frame being selected.
+10 and 20 of them. The _frame_ slider allows you to select a single frame - i.e. an image - out of the images satifying
+the above criteria. A small chart below the slider shows how many of the target objects (_pedestrians_ in this case)
+for each frame and a red vertical line highlights the frame being selected.
 
 At this point, the app shows the ground image in the main column and prompts you to run the YOLO model. 
 You can do this by unchecking the checkbox that now appears in the sidebar. Once you uncheck the checkbox, 
 YOLO will run and an image with the objects detected by YOLO will be shown. You can compare this image with 
-the ground image and, by tweaking the model parameters in the sidebar and see if you can get the two images to match! Note that YOLO runs in real time and every time you change the parameters YOLO runs again.
+the ground image and, by tweaking the model parameters in the sidebar, see if you can get the two images to match! 
+Note that YOLO runs in real time and every time you change the parameters YOLO runs again.
