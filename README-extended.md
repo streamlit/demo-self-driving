@@ -24,7 +24,7 @@ as well.
 
 ## How to run this demo
 ```
-pip install -r requirements.txt
+pip install -r streamlit altair pandas numpy
 streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
 ```
 
