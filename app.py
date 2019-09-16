@@ -25,7 +25,7 @@
 # Udacity dataset: https://github.com/udacity/self-driving-car  #
 # Streamlit: https://github.com/streamlit/streamlit             #
 #                                                               #
-# See README.md for more details                                 #
+# See README.md for more details                                #
 #################################################################
 
 
@@ -43,43 +43,40 @@ from collections import OrderedDict
 #   Constants   #
 #################
 
-DATA_URL_ROOT = 'https://streamlit-self-driving.s3-us-west-2.amazonaws.com/'
-LABELS_FILENAME = os.path.join(DATA_URL_ROOT, 'labels.csv.gz')
-LABELS_PATH = "coco.names"
-WEIGHTS_PATH = "yolov3.weights"
-CONFIG_PATH = 'yolov3.cfg'
+# Path to the labels file on S3
+DATA_URL_ROOT = "https://streamlit-self-driving.s3-us-west-2.amazonaws.com/"
+LABELS_FILENAME = os.path.join(DATA_URL_ROOT, "labels.csv.gz")
 
+# External files with url and optionally md5
 EXTERNAL_FILES = OrderedDict({
-    'yolov3.weights': {
-        'md5': 'c84e5b99d0e52cd466ae710cadf6d84c',
-        'url': 'https://pjreddie.com/media/files/yolov3.weights'
+    "yolov3.weights": {
+        "md5": "c84e5b99d0e52cd466ae710cadf6d84c",
+        "url": "https://pjreddie.com/media/files/yolov3.weights"
     },
-    'coco.names': {
-        'md5': '8fc50561361f8bcf96b0177086e7616c',
-        'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names'
+    "yolov3.cfg": {
+        "md5": "b969a43a848bbf26901643b833cfb96c",
+        "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg"
     },
-    'yolov3.cfg': {
-        'md5': 'b969a43a848bbf26901643b833cfb96c',
-        'url': 'https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg'
+    "README.md": {
+        "md5": None,
+        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
     },
-    'README.md': {
-        'md5': None,
-        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md'
-    },
-    'app.py': {
-        'md5': None,
-        'url': 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py'
+    "app.py": {
+        "md5": None,
+        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
 })
 
-APP_DATA_FILES = ['yolov3.weights', 'coco.names', 'yolov3.cfg']
+# Data files needed to run the app
+APP_DATA_FILES = ["yolov3.weights", "yolov3.cfg"]
 
+# Colors for the boxes
 LABEL_COLORS = {
-    'car': [255, 0, 0],
-    'pedestrian': [0, 255, 0],
-    'truck': [0, 0, 255],
-    'trafficLight': [255, 255, 0],
-    'biker': [255, 0, 255],
+    "car": [255, 0, 0],
+    "pedestrian": [0, 255, 0],
+    "truck": [0, 0, 255],
+    "trafficLight": [255, 255, 0],
+    "biker": [255, 0, 255],
 }
 
 
@@ -90,13 +87,13 @@ LABEL_COLORS = {
 # Check if file has been downloaded. It uses the md5 in EXTERNAL_FILES to check if the file has been downloaded.
 def file_downloaded(file_path):
     if file_path not in EXTERNAL_FILES:
-        raise Exception('Unknown file: %s' % file_path)
+        raise Exception("Unknown file: %s" % file_path)
     if not os.path.exists(file_path):
         return False
-    expected_hash = EXTERNAL_FILES[file_path]['md5']
+    expected_hash = EXTERNAL_FILES[file_path]["md5"]
     if expected_hash is None:
         return True
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         m = hashlib.md5()
         m.update(f.read())
         if str(m.hexdigest()) != expected_hash:
@@ -107,17 +104,17 @@ def file_downloaded(file_path):
 # Download a file. Report progress using st.progress that draws a progress bar on the Streamlit UI.
 def download_file(file_path):
     if file_path not in EXTERNAL_FILES:
-        raise Exception('Unknown file: %s' % file_path)
+        raise Exception("Unknown file: %s" % file_path)
     try:
-        download_message= 'Downloading %s...' % file_path
+        download_message= "Downloading %s..." % file_path
         title = st.markdown("""
             ## Getting data files
             """)
         weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
-        with open(file_path, 'wb') as fp:
-            with urllib.request.urlopen(EXTERNAL_FILES[file_path]['url']) as response:
-                length = int(response.info()['Content-Length'])
+        with open(file_path, "wb") as fp:
+            with urllib.request.urlopen(EXTERNAL_FILES[file_path]["url"]) as response:
+                length = int(response.info()["Content-Length"])
                 counter = 0.0
                 while True:
                     data = response.read(8192)
@@ -126,7 +123,7 @@ def download_file(file_path):
                     counter += len(data)
                     progress = counter / length
                     MEGABYTES = 2.0 ** -20.0
-                    weights_warning.warning('%s (%6.2f/%6.2f MB)' %
+                    weights_warning.warning("%s (%6.2f/%6.2f MB)" %
                                             (download_message, counter * MEGABYTES, length * MEGABYTES))
                     progress_bar.progress(progress if progress <= 1.0 else 1.0)
                     fp.write(data)
@@ -139,57 +136,58 @@ def download_file(file_path):
 # The preamble shows the README or the source code of the app and takes care of downloading the data files
 def preamble():
     # Select box to choose whether to show the README, the source code, or run the app
-    # Note that the select is in a sidebar under the title 'About'. We also select option 0
+    # Note that the select is in a sidebar under the title "About". We also select option 0
     # to be the default and we pass in a function to format the labels to our liking.
-    st.sidebar.title('Choose what to do')
+    st.sidebar.title("Choose what to do")
     option = st.sidebar.selectbox(
-        '',
-        ['readme', 'code', 'app'],
+        "",
+        ["readme", "code", "app"],
         0,
         lambda opt: {
-            'readme': 'Show the readme',
-            'code': 'Show the source code',
-            'app': 'Run the App'
+            "readme": "Show the readme",
+            "code": "Show the source code",
+            "app": "Run the App"
         }[opt])
-    if option == 'readme':
-        if not file_downloaded('README.md'):
-            download_file('README.md')
-        with open('README.md', 'r') as fp:
-            st.markdown(fp.read() + '\n\n')
+    if option == "readme":
+        if not file_downloaded("README.md"):
+            download_file("README.md")
+        with open("README.md", "r") as fp:
+            st.markdown(fp.read() + "\n\n")
             # Download data files
             for file in APP_DATA_FILES:
-                if file != 'README.md' and not file_downloaded(file):
+                if file != "README.md" and not file_downloaded(file):
                     download_file(file)
         return False
-    elif option == 'code':
-        if not file_downloaded('app.py'):
-            download_file('app.py')
-        with open('app.py', 'r') as fp:
+    elif option == "code":
+        if not file_downloaded("app.py"):
+            download_file("app.py")
+        with open("app.py", "r") as fp:
             st.code(fp.read())
         return False
 
     # Download data files if they have not been downloaded yet
     for file in APP_DATA_FILES:
-        if file != 'README.md' and not file_downloaded(file):
+        if file != "README.md" and not file_downloaded(file):
             download_file(file)
 
     return True
+
 # st.cache allows us to reuse computation across runs, making Streamlit really fast.
-# This is a comman usage, where we load data from an endpoint once and then reuse
+# This is a common usage, where we load data from an endpoint once and then reuse
 # it across runs.
 @st.cache
 def load_metadata(url):
     metadata = pd.read_csv(url)
     return metadata
 
-# An amazing property of st.cache'ed functions is that you can pipe them into
+# An amazing property of st.cached functions is that you can pipe them into
 # each other, creating a computation DAG (directed acyclic graph). Streamlit
 # automatically recomputes only the *subset* of the DAG required to get the
 # right answer!
 @st.cache
 def create_summary(metadata):
-    one_hot_encoded = pd.get_dummies(metadata[['frame', 'label']], columns=['label'])
-    summary = one_hot_encoded.groupby(['frame']).sum()
+    one_hot_encoded = pd.get_dummies(metadata[["frame", "label"]], columns=["label"])
+    summary = one_hot_encoded.groupby(["frame"]).sum()
     return summary
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
@@ -213,7 +211,7 @@ def add_boxes(image, boxes):
     return image.astype(np.uint8)
 
 
-# This function select frames from the summary based on label, min_elts, and max_elts
+# This function select frames from the summary based on label, min_elts, and max_elts.
 @st.cache
 def get_selected_frames(summary, label, min_elts, max_elts):
     return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
@@ -229,14 +227,12 @@ def load_network(config_path, weights_path):
     return net, output_layer_names
 
 
-# Run the YOLO network to detect objects.
+# Run the YOLO model to detect objects.
 def yolo_v3(image,
             confidence_threshold=0.5,
-            overlap_threshold=0.3,
-            weights_path=WEIGHTS_PATH,
-            config_path=CONFIG_PATH):
+            overlap_threshold=0.3):
     # Load the network. Because this is cached it will only happen once.
-    net, output_layer_names = load_network(config_path, weights_path)
+    net, output_layer_names = load_network("yolov3.cfg", "yolov3.weights")
 
     # load our input image and grab its spatial dimensions
     H, W = image.shape[:2]
@@ -270,7 +266,7 @@ def yolo_v3(image,
                 # scale the bounding box coordinates back relative to the
                 # size of the image, keeping in mind that YOLO actually
                 # returns the center (x, y)-coordinates of the bounding
-                # box followed by the boxes' width and height
+                # box followed by the boxes" width and height
                 box = detection[0:4] * np.array([W, H, W, H])
                 (centerX, centerY, width, height) = box.astype("int")
 
@@ -293,13 +289,13 @@ def yolo_v3(image,
     # remap labels
     new_labels = [None, ] * 80
     for e in [
-        (0, 'pedestrian'),
-        (1, 'biker'),
-        (2, 'car'),
-        (3, 'biker'),
-        (5, 'truck'),
-        (7, 'truck'),
-        (9, 'trafficLight'),
+        (0, "pedestrian"),
+        (1, "biker"),
+        (2, "car"),
+        (3, "biker"),
+        (5, "truck"),
+        (7, "truck"),
+        (9, "trafficLight"),
 
     ]:
         new_labels[e[0]] = e[1]
@@ -325,11 +321,11 @@ def yolo_v3(image,
             labels.append(label)
 
     return pd.DataFrame({
-        'xmin': xmin,
-        'ymin': ymin,
-        'xmax': xmax,
-        'ymax': ymax,
-        'labels': labels
+        "xmin": xmin,
+        "ymin": ymin,
+        "xmax": xmax,
+        "ymax": ymax,
+        "labels": labels
     })
 
 
@@ -346,92 +342,91 @@ def main():
     # ... and creating a summary our of the metadata
     summary = create_summary(metadata)
 
-    # Draw the sidebar for the selection of the frame. This will allow us to select a frame
-    # for the object detection
-    st.sidebar.title('Frame')
+    # Add a title to the sidebar for the selection of the frame.
+    st.sidebar.title("Frame")
 
-    # Formatter for the labels
+    # Formatter for the labels.
     def formatter(label):
         return {
-            'label_biker': 'biker',
-            'label_car': 'car',
-            'label_pedestrian': 'pedestrian',
-            'label_trafficLight': 'traffic light',
-            'label_truck': 'truck'
+            "label_biker": "biker",
+            "label_car": "car",
+            "label_pedestrian": "pedestrian",
+            "label_trafficLight": "traffic light",
+            "label_truck": "truck"
         }[label]
+
     # Draw a selection box for the labels
     label = st.sidebar.selectbox(
-        'Pick a label',
+        "Pick a label",
         summary.columns,
         2,
         formatter
     )
-    # Draw a slider to select a range of objects we want in the image
-    min_elts, max_elts = st.sidebar.slider('How many %ss (select a range)?' % formatter(label), 0, 25, [10, 20])
+    # Draw a slider to select the range of objects we want in the image
+    min_elts, max_elts = st.sidebar.slider("How many %ss (select a range)?" % formatter(label), 0, 25, [10, 20])
 
     # Select frames based on the selection in the sidebar
     selected_frames = get_selected_frames(summary, label, min_elts, max_elts)
     if len(selected_frames) < 1:
-        st.error('No frames fit the criteria. 😳 Please select different label or number. ✌️')
+        st.error("No frames fit the criteria. 😳 Please select different label or number. ✌️")
         return
 
     objects_per_frame = summary.loc[selected_frames, label].reset_index(drop=True).reset_index()
 
     # Choose a frame out of the selected frames.
-    selected_frame_index = st.sidebar.slider('Choose a frame (index)', 0, len(selected_frames) - 1, 0)
+    selected_frame_index = st.sidebar.slider("Choose a frame (index)", 0, len(selected_frames) - 1, 0)
     selected_frame = selected_frames[selected_frame_index]
-    # Compose the image url for the frame
+    # Compose the image url for the frame.
     image_url = os.path.join(DATA_URL_ROOT, selected_frame)
-    # Load the image from S3
+    # Load the image from S3.
     image = load_image(image_url)
 
-    # Draw an altair chart in the sidebar with information on the frame
+    # Draw an altair chart in the sidebar with information on the frame.
     chart = alt.Chart(objects_per_frame, height=120).mark_area().encode(
-        alt.X('index:Q', scale=alt.Scale(nice=False)),
-        alt.Y('%s:Q' % label))
-    selected_frame_df = pd.DataFrame({'selected_frame': [selected_frame_index]})
-    vline = alt.Chart(selected_frame_df).mark_rule(color='red').encode(
-        alt.X('selected_frame:Q', axis=None)
+        alt.X("index:Q", scale=alt.Scale(nice=False)),
+        alt.Y("%s:Q" % label))
+    selected_frame_df = pd.DataFrame({"selected_frame": [selected_frame_index]})
+    vline = alt.Chart(selected_frame_df).mark_rule(color="red").encode(
+        alt.X("selected_frame:Q", axis=None)
     )
     st.sidebar.altair_chart(alt.layer(chart, vline))
 
     # Add boxes for objects on the image. These are the boxes for the ground image.
-    boxes = metadata[metadata.frame == selected_frame].drop(columns=['frame'])
+    boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
 
-    # Create an header for the ground image
+    # Create an header for the ground image.
     st.write("### Ground Truth (frame #`%i`)" % selected_frame_index)
 
-    # Draw the ground image with the boxes that show the objects
+    # Draw the ground image with the boxes that show the objects.
     image_with_boxes = add_boxes(image, boxes)
     st.image(image_with_boxes, use_column_width=True)
 
     # Add a section in the sidebar for the model.
-    st.sidebar.markdown('----\n # Model')
+    st.sidebar.markdown("----\n # Model")
     # This is an empty line
-    st.sidebar.markdown('')
+    st.sidebar.markdown("")
 
-    # Draw a checkbox and depending on the user's choice either run the model ot show a warning.
-    if st.sidebar.checkbox('Run Yolo Detection', False):
+    # Draw a checkbox and depending on the user's choice either run the model or show a warning.
+    if st.sidebar.checkbox("Run Yolo Detection", False):
         # This block of code runs the YOLO model.
         # It also adds two sliders in the sidebar for confidence threshold and overlap threshold.
         # These are parameters of the models. When the user changes these sliders, the model re-runs.
-        confidence_threshold = st.sidebar.slider('Confidence threshold', 0.0, 1.0, 0.5, 0.01)
-        overlap_threshold = st.sidebar.slider('Overlap threshold', 0.0, 1.0, 0.3, 0.01)
-
+        confidence_threshold = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.5, 0.01)
+        overlap_threshold = st.sidebar.slider("Overlap threshold", 0.0, 1.0, 0.3, 0.01)
         # Get the boxes for the objects detected by YOLO by running the YOLO model.
         yolo_boxes = yolo_v3(image,
                              overlap_threshold=overlap_threshold,
                              confidence_threshold=confidence_threshold)
         # Add the boxes to the image.
         image_yolo = add_boxes(image, yolo_boxes)
-        # Add an header
-        st.write('### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)' %
+        # Add an header.
+        st.write("### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)" %
                  (overlap_threshold, confidence_threshold))
         # Draw the image with the boxes computed by YOLO. This image has the detected objects.
         st.image(image_yolo, use_column_width=True)
     else:
-        st.warning('Click _Run Yolo Detection_ on the left to compare with ground truth.')
+        st.warning("Click _Run Yolo Detection_ on the left to compare with ground truth.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
