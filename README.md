@@ -8,9 +8,9 @@ on images from the Udacity dataset in real time. The demo allows the user to sel
 a reference 'ground image' for the detected objects and an image with the objects detected by YOLO.
 
 ## Where to go from here
-Use the selection box in the sidebar to the left to either see the code, run the app or see this README
+Use the selection box in the sidebar to the left to either see the source code, run the app or see this README
 
-For more details on this app see [here](https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README-extended.md)
+For more details on this app see the [extended README](https://github.com/streamlit/demo-self-driving/blob/master/README-extended.md)
 
 ## Links
 - This demo is available on Github at https://github.com/streamlit/demo-self-driving
