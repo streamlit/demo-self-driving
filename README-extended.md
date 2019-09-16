@@ -24,7 +24,7 @@ as well.
 
 ## How to run this demo
 ```
-pip install streamlit opencv-python
+pip install -r requirements.txt
 streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
 ```
 
@@ -36,13 +36,13 @@ The app consists of a sidebar, used mostly for controls and a main column that s
 The first thing that you will see is the README in the main column and a selection box in the
 sidebar. You can use the selection box to switch between the README, the source code, and the core part of the app.
 
-When choose the app in the selectbox, some controls will appear in the sidebar. These controls allow you to select 
+When choose the app in the selectbox, some controls will appear in the sidebar. These controls allow you to select
 a frame to show in the main column as _ground image_. Tweak the controls and see how different ground images
 are shown. For example, select `pedestrian` in the picker. Tune the minimum and
-maximum values in the `How many pedestrians` slider to `10.0` and `20.0`, respectively, and just pick any frame 
+maximum values in the `How many pedestrians` slider to `10.0` and `20.0`, respectively, and just pick any frame
 by sliding the `Choose a frame` slider.
 
-At this point, the app shows the ground image in the main column and prompts you to run the YOLO model. 
-You can do this by unchecking the checkbox that now appears in the sidebar. Once you uncheck the checkbox, 
-YOLO will run and an image with the objects detected by YOLO will be shown. You can compare this image with 
+At this point, the app shows the ground image in the main column and prompts you to run the YOLO model.
+You can do this by unchecking the checkbox that now appears in the sidebar. Once you uncheck the checkbox,
+YOLO will run and an image with the objects detected by YOLO will be shown. You can compare this image with
 the ground image and, by tweaking the model parameters in the sidebar and see if you can get the two images to match!

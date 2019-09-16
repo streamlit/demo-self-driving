@@ -1,0 +1,4 @@
+streamlit
+altair
+pandas
+numpy
