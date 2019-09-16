@@ -8,12 +8,13 @@ on images from the Udacity dataset in real time. The demo allows the user to sel
 a reference 'ground image' for the detected objects and an image with the objects detected by YOLO.
 
 ## Where to go from here
-Use the selection box in the sidebar to the left to either see the source code, run the app or see this README
+Once the app has loaded the model data, use the selection box in the sidebar to the left to either see the source code,
+run the app, or see this README
 
 For more details on this app see the [extended README](https://github.com/streamlit/demo-self-driving/blob/master/README-extended.md)
 
 ## Links
 - This demo is available on Github at https://github.com/streamlit/demo-self-driving
-- Yolo: https://pjreddie.com/darknet/yolo/
+- Yolo: https://pjreddie.com/darknet/yolo
 - Udacity dataset: https://github.com/udacity/self-driving-car
 - Streamlit: https://github.com/streamlit/streamlit

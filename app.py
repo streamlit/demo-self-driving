@@ -28,14 +28,12 @@
 # See README.md for more details                                #
 #################################################################
 
-
 import streamlit as st
 import altair as alt
 import pandas as pd
 import numpy as np
 import os
 import urllib
-import hashlib
 import cv2
 from collections import OrderedDict
 
@@ -43,32 +41,24 @@ from collections import OrderedDict
 #   Constants   #
 #################
 
-# Path to the labels file on S3
+# Path to the Streamlit public S3 bucket
 DATA_URL_ROOT = "https://streamlit-self-driving.s3-us-west-2.amazonaws.com/"
-LABELS_FILENAME = os.path.join(DATA_URL_ROOT, "labels.csv.gz")
 
 # External files with url and optionally md5
 EXTERNAL_FILES = OrderedDict({
     "yolov3.weights": {
-        "md5": "c84e5b99d0e52cd466ae710cadf6d84c",
         "url": "https://pjreddie.com/media/files/yolov3.weights"
     },
     "yolov3.cfg": {
-        "md5": "b969a43a848bbf26901643b833cfb96c",
         "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg"
     },
     "README.md": {
-        "md5": None,
         "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
     },
     "app.py": {
-        "md5": None,
         "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
 })
-
-# Data files needed to run the app
-APP_DATA_FILES = ["yolov3.weights", "yolov3.cfg"]
 
 # Colors for the boxes
 LABEL_COLORS = {
@@ -79,37 +69,23 @@ LABEL_COLORS = {
     "biker": [255, 0, 255],
 }
 
+MEGABYTES = 2.0 ** -20.0
+
 
 #################
 #   Functions   #
 #################
 
-# Check if file has been downloaded. It uses the md5 in EXTERNAL_FILES to check if the file has been downloaded.
-def file_downloaded(file_path):
-    if file_path not in EXTERNAL_FILES:
-        raise Exception("Unknown file: %s" % file_path)
-    if not os.path.exists(file_path):
-        return False
-    expected_hash = EXTERNAL_FILES[file_path]["md5"]
-    if expected_hash is None:
-        return True
-    with open(file_path, "rb") as f:
-        m = hashlib.md5()
-        m.update(f.read())
-        if str(m.hexdigest()) != expected_hash:
-            return False
-    return True
-
-
 # Download a file. Report progress using st.progress that draws a progress bar on the Streamlit UI.
 def download_file(file_path):
     if file_path not in EXTERNAL_FILES:
         raise Exception("Unknown file: %s" % file_path)
+    title = None
+    weights_warning = None
+    progress_bar = None
     try:
         download_message= "Downloading %s..." % file_path
-        title = st.markdown("""
-            ## Getting data files
-            """)
+        title = st.markdown("## Getting data files")
         weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
         with open(file_path, "wb") as fp:
@@ -122,19 +98,37 @@ def download_file(file_path):
                         break
                     counter += len(data)
                     progress = counter / length
-                    MEGABYTES = 2.0 ** -20.0
                     weights_warning.warning("%s (%6.2f/%6.2f MB)" %
                                             (download_message, counter * MEGABYTES, length * MEGABYTES))
                     progress_bar.progress(progress if progress <= 1.0 else 1.0)
                     fp.write(data)
     finally:
-        title.empty()
-        weights_warning.empty()
-        progress_bar.empty()
+        if title:
+            title.empty()
+        if weights_warning:
+            weights_warning.empty()
+        if progress_bar:
+            progress_bar.empty()
+
+
+# Download a single file if not on the filesystem and make its content available as a string.
+def get_file_content(filename):
+    if not os.path.exists(filename):
+        download_file(filename)
+    with open(filename, "r") as fp:
+        return fp.read() + "\n\n"
 
 
 # The preamble shows the README or the source code of the app and takes care of downloading the data files
 def preamble():
+    # Show README.
+    readme_text = st.markdown(get_file_content("README.md"))
+
+    # Download data files.
+    for filename in EXTERNAL_FILES.keys():
+        if filename != "README.md" and not os.path.exists(filename):
+            download_file(filename)
+
     # Select box to choose whether to show the README, the source code, or run the app
     # Note that the select is in a sidebar under the title "About". We also select option 0
     # to be the default and we pass in a function to format the labels to our liking.
@@ -144,32 +138,18 @@ def preamble():
         ["readme", "code", "app"],
         0,
         lambda opt: {
-            "readme": "Show the readme",
+            "readme": "Show the README",
             "code": "Show the source code",
             "app": "Run the App"
         }[opt])
     if option == "readme":
-        if not file_downloaded("README.md"):
-            download_file("README.md")
-        with open("README.md", "r") as fp:
-            st.markdown(fp.read() + "\n\n")
-            # Download data files
-            for file in APP_DATA_FILES:
-                if file != "README.md" and not file_downloaded(file):
-                    download_file(file)
         return False
-    elif option == "code":
-        if not file_downloaded("app.py"):
-            download_file("app.py")
-        with open("app.py", "r") as fp:
-            st.code(fp.read())
+    if option == "code":
+        readme_text.empty()
+        st.code(get_file_content("app.py"))
         return False
 
-    # Download data files if they have not been downloaded yet
-    for file in APP_DATA_FILES:
-        if file != "README.md" and not file_downloaded(file):
-            download_file(file)
-
+    readme_text.empty()
     return True
 
 # st.cache allows us to reuse computation across runs, making Streamlit really fast.
@@ -215,6 +195,7 @@ def add_boxes(image, boxes):
 @st.cache
 def get_selected_frames(summary, label, min_elts, max_elts):
     return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
+
 
 # Load our YOLO object detector trained on COCO dataset (80 classes).
 @st.cache(ignore_hash=True)
@@ -338,7 +319,7 @@ def main():
         return
 
     # Do some preparation by loading metadata from S3...
-    metadata = load_metadata(LABELS_FILENAME)
+    metadata = load_metadata(os.path.join(DATA_URL_ROOT, "labels.csv.gz"))
     # ... and creating a summary our of the metadata
     summary = create_summary(metadata)
 
