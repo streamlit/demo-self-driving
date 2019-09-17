@@ -47,10 +47,12 @@ DATA_URL_ROOT = "https://streamlit-self-driving.s3-us-west-2.amazonaws.com/"
 # External files with url and optionally md5
 EXTERNAL_FILES = OrderedDict({
     "yolov3.weights": {
-        "url": "https://pjreddie.com/media/files/yolov3.weights"
+        "url": "https://pjreddie.com/media/files/yolov3.weights",
+        "size": 248007048
     },
     "yolov3.cfg": {
-        "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg"
+        "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg",
+        "size": 8342
     },
     "README.md": {
         "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
@@ -76,15 +78,28 @@ MEGABYTES = 2.0 ** -20.0
 #   Functions   #
 #################
 
+# Check is a file has been downloaded.
+def is_downloaded(file_path):
+    if not os.path.exists(file_path):
+        return False
+    if "size" not in EXTERNAL_FILES[file_path]:
+        return True
+    return os.path.getsize(file_path) == EXTERNAL_FILES[file_path]["size"]
+
+
 # Download a file. Report progress using st.progress that draws a progress bar on the Streamlit UI.
 def download_file(file_path):
     if file_path not in EXTERNAL_FILES:
         raise Exception("Unknown file: %s" % file_path)
+    # Declare some variable used for Streamlit commands here so that we can use them in the try finally.
+    # This is for a markdown title.
     title = None
+    # This is to show a warning if the download is in progress.
     weights_warning = None
+    # This is for the Streamlit progress bar.
     progress_bar = None
     try:
-        download_message= "Downloading %s..." % file_path
+        download_message = "Downloading %s..." % file_path
         title = st.markdown("## Getting data files")
         weights_warning = st.warning(download_message)
         progress_bar = st.progress(0)
@@ -112,29 +127,31 @@ def download_file(file_path):
 
 
 # Download a single file if not on the filesystem and make its content available as a string.
-def get_file_content(filename):
-    if not os.path.exists(filename):
+def get_file_content_as_string(filename):
+    if not is_downloaded(filename):
         download_file(filename)
     with open(filename, "r") as fp:
         return fp.read() + "\n\n"
 
 
-# The preamble shows the README or the source code of the app and takes care of downloading the data files
+# The preamble shows the README or the source code of the app and takes care of downloading the data files.
 def preamble():
-    # Show README.
-    readme_text = st.markdown(get_file_content("README.md"))
+    # Show README by calling st.markdown. This is a Streamlit command that shows markdown text.
+    # We get a handle of this, so that we can make it disappear later when we need it by calling
+    # readme_text.empty().
+    readme_text = st.markdown(get_file_content_as_string("README.md"))
 
     # Download data files.
     for filename in EXTERNAL_FILES.keys():
-        if filename != "README.md" and not os.path.exists(filename):
+        if filename != "README.md" and not is_downloaded(filename):
             download_file(filename)
 
     # Select box to choose whether to show the README, the source code, or run the app
     # Note that the select is in a sidebar under the title "About". We also select option 0
     # to be the default and we pass in a function to format the labels to our liking.
-    st.sidebar.title("Choose what to do")
+    st.sidebar.title("What to do")
     option = st.sidebar.selectbox(
-        "",
+        "Choose",
         ["readme", "code", "app"],
         0,
         lambda opt: {
@@ -146,7 +163,7 @@ def preamble():
         return False
     if option == "code":
         readme_text.empty()
-        st.code(get_file_content("app.py"))
+        st.code(get_file_content_as_string("app.py"))
         return False
 
     readme_text.empty()
@@ -387,26 +404,22 @@ def main():
     # This is an empty line
     st.sidebar.markdown("")
 
-    # Draw a checkbox and depending on the user's choice either run the model or show a warning.
-    if st.sidebar.checkbox("Run Yolo Detection", False):
-        # This block of code runs the YOLO model.
-        # It also adds two sliders in the sidebar for confidence threshold and overlap threshold.
-        # These are parameters of the models. When the user changes these sliders, the model re-runs.
-        confidence_threshold = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.5, 0.01)
-        overlap_threshold = st.sidebar.slider("Overlap threshold", 0.0, 1.0, 0.3, 0.01)
-        # Get the boxes for the objects detected by YOLO by running the YOLO model.
-        yolo_boxes = yolo_v3(image,
-                             overlap_threshold=overlap_threshold,
-                             confidence_threshold=confidence_threshold)
-        # Add the boxes to the image.
-        image_yolo = add_boxes(image, yolo_boxes)
-        # Add an header.
-        st.write("### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)" %
-                 (overlap_threshold, confidence_threshold))
-        # Draw the image with the boxes computed by YOLO. This image has the detected objects.
-        st.image(image_yolo, use_column_width=True)
-    else:
-        st.warning("Click _Run Yolo Detection_ on the left to compare with ground truth.")
+    # The following code runs the YOLO model.
+    # It also adds two sliders in the sidebar for confidence threshold and overlap threshold.
+    # These are parameters of the models. When the user changes these sliders, the model re-runs.
+    confidence_threshold = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.5, 0.01)
+    overlap_threshold = st.sidebar.slider("Overlap threshold", 0.0, 1.0, 0.3, 0.01)
+    # Get the boxes for the objects detected by YOLO by running the YOLO model.
+    yolo_boxes = yolo_v3(image,
+                         overlap_threshold=overlap_threshold,
+                         confidence_threshold=confidence_threshold)
+    # Add the boxes to the image.
+    image_yolo = add_boxes(image, yolo_boxes)
+    # Add an header.
+    st.write("### YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)" %
+             (overlap_threshold, confidence_threshold))
+    # Draw the image with the boxes computed by YOLO. This image has the detected objects.
+    st.image(image_yolo, use_column_width=True)
 
 
 if __name__ == "__main__":
