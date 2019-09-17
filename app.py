@@ -23,6 +23,7 @@ import numpy as np
 import os, urllib, cv2, collections
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
+# Streamlit also lets you split apps across multiple .py files -- not shown here.
 def main():
     # Render the readme as markdown using st.markdown.
     readme_text = st.markdown(get_file_content_as_string("README.md"))
@@ -44,7 +45,7 @@ def main():
         readme_text.empty()
         run_the_app()
 
-# This file downloader demonstrates Streamlit animation. For 
+# This file downloader demonstrates Streamlit animation.
 def download_file(file_path):
     # Don't download the file twice. (If possible, verify the download using the file length.)
     if os.path.exists(file_path):
@@ -200,7 +201,6 @@ def get_file_content_as_string(filename):
     download_file(filename)
     with open(filename) as input_file:
         return input_file.read() + "\n\n"
-
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
