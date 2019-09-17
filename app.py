@@ -23,7 +23,6 @@ import numpy as np
 import os, urllib, cv2, collections
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
-# Streamlit also lets you split apps across multiple .py files -- not shown here.
 def main():
     # Render the readme as markdown using st.markdown.
     readme_text = st.markdown(get_file_content_as_string("README.md"))
@@ -89,8 +88,7 @@ def run_the_app():
     # In this common pattern, we download data from an endpoint only once.
     @st.cache
     def load_metadata(url):
-        metadata = pd.read_csv(url)
-        return metadata
+        return pd.read_csv(url)
 
     # This function uses some Pandas magic to summarize the metadata Dataframe.
     @st.cache
@@ -108,18 +106,19 @@ def run_the_app():
     # An amazing property of st.cached functions is that you can pipe them into
     # one another to form a computation DAG (directed acyclic graph). Streamlit
     # recomputes only whatever subset is required to get the right answer!
-    # (Uncomment the final line to peek at these DataFrames.)
     metadata = load_metadata(os.path.join(DATA_URL_ROOT, "labels.csv.gz"))
     summary = create_summary(metadata)
+    
+    # Uncomment this final line to peek at these DataFrames.
     # st.write('## Metadata', metadata[:1000], '## Summary', summary[:1000])
 
-    # Draw the UI element which lets the user search for objects (pedestrians, cars, etc.)
+    # Draw the UI elements to search for objects (pedestrians, cars, etc.)
     selected_frame_index, selected_frame = frame_selector_ui(summary)
     if selected_frame_index == None:
         st.error("No frames fit the criteria. 😳 Please select different label or number. ✌️")
         return
 
-    # Draw the UI element which lets the user select parameters for the YOLO object detector.
+    # Draw the UI element to select parameters for the YOLO object detector.
     confidence_threshold, overlap_threshold = object_detector_ui()
 
     # Load the image from S3.
@@ -246,18 +245,20 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
     indices = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, overlap_threshold)
         
     # Map from YOLO labels to Udacity labels.
-    udacity_labels = [None, ] * 80
-    udacity_labels[0] = 'pedestrian'
-    udacity_labels[1] = 'biker'
-    udacity_labels[2] = 'car'
-    udacity_labels[3] = 'biker'
-    udacity_labels[5] = udacity_labels[7] = 'truck'
-    udacity_labels[9] = 'trafficLight'
+    UDACITY_LABELS = {
+        0: 'pedestrian',
+        1: 'biker',
+        2: 'car',
+        3: 'biker',
+        5: 'truck',
+        7: 'truck',
+        9: 'trafficLight'
+    }
     xmin, xmax, ymin, ymax, labels = [], [], [], [], []
     if len(indices) > 0:
         # loop over the indexes we are keeping
         for i in indices.flatten():
-            label = udacity_labels[class_IDs[i]]
+            label = UDACITY_LABELS.get(class_IDs[i], None)
             if label is None:
                 continue
 
