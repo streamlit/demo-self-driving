@@ -341,7 +341,7 @@ def main():
     summary = create_summary(metadata)
 
     # Add a title to the sidebar for the selection of the frame.
-    st.sidebar.title("----\n Frame")
+    st.sidebar.markdown("---\n # Frame")
 
     # Formatter for the labels.
     def formatter(label):
