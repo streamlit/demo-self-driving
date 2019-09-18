@@ -20,7 +20,7 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 import numpy as np
-import os, urllib, cv2, collections
+import os, urllib, cv2
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
@@ -49,7 +49,7 @@ def download_file(file_path):
     # Don't download the file twice. (If possible, verify the download using the file length.)
     if os.path.exists(file_path):
         if "size" not in EXTERNAL_DEPENDENCIES[file_path]:
-            return 
+            return
         elif os.path.getsize(file_path) == EXTERNAL_DEPENDENCIES[file_path]["size"]:
             return
 
@@ -77,9 +77,9 @@ def download_file(file_path):
 
     # Finally, we remove these visual elements by calling .empty().
     finally:
-        if weights_warning:
+        if weights_warning != None:
             weights_warning.empty()
-        if progress_bar:
+        if progress_bar != None:
             progress_bar.empty()
 
 # This is the main app app itself, which appears when the user selects "Run the app".
@@ -108,14 +108,14 @@ def run_the_app():
     # recomputes only whatever subset is required to get the right answer!
     metadata = load_metadata(os.path.join(DATA_URL_ROOT, "labels.csv.gz"))
     summary = create_summary(metadata)
-    
+
     # Uncomment this final line to peek at these DataFrames.
     # st.write('## Metadata', metadata[:1000], '## Summary', summary[:1000])
 
     # Draw the UI elements to search for objects (pedestrians, cars, etc.)
     selected_frame_index, selected_frame = frame_selector_ui(summary)
     if selected_frame_index == None:
-        st.error("No frames fit the criteria. 😳 Please select different label or number. ✌️")
+        st.error("No frames fit the criteria. Please select different label or number.")
         return
 
     # Draw the UI element to select parameters for the YOLO object detector.
@@ -188,9 +188,9 @@ def draw_image_with_boxes(image, boxes, header):
     }
     image_with_boxes = image.astype(np.float64)
     for _, (xmin, ymin, xmax, ymax, label) in boxes.iterrows():
-        image_with_boxes[ymin:ymax,xmin:xmax,:] += LABEL_COLORS[label]
-        image_with_boxes[ymin:ymax,xmin:xmax,:] /= 2
-    
+        image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] += LABEL_COLORS[label]
+        image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] /= 2
+
     # Draw the header and image.
     st.subheader(header)
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
@@ -243,7 +243,7 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
                 confidences.append(float(confidence))
                 class_IDs.append(classID)
     indices = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, overlap_threshold)
-        
+
     # Map from YOLO labels to Udacity labels.
     UDACITY_LABELS = {
         0: 'pedestrian',
@@ -271,13 +271,14 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
             ymax.append(y+h)
             labels.append(label)
 
-    return pd.DataFrame({"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax, "labels": labels})
+    boxes = pd.DataFrame({"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax, "labels": labels})
+    return boxes[["xmin", "ymin", "xmax", "ymax", "labels"]]
 
 # Path to the Streamlit public S3 bucket
 DATA_URL_ROOT = "https://streamlit-self-driving.s3-us-west-2.amazonaws.com/"
 
 # External files to download.
-EXTERNAL_DEPENDENCIES = collections.OrderedDict({
+EXTERNAL_DEPENDENCIES = {
     "yolov3.weights": {
         "url": "https://pjreddie.com/media/files/yolov3.weights",
         "size": 248007048
@@ -292,7 +293,7 @@ EXTERNAL_DEPENDENCIES = collections.OrderedDict({
     "app.py": {
         "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
-})
+}
 
 if __name__ == "__main__":
     main()
