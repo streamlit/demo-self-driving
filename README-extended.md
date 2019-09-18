@@ -24,7 +24,7 @@ as well.
 
 ## How to run this demo
 ```
-pip install streamlit opencv-python altair pandas numpy
+pip install streamlit opencv-python altair
 streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
 ```
 
