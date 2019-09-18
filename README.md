@@ -1,8 +1,25 @@
-# Streamlit Self-Driving Car Demo
+# Streamlit Udacity Self-driving Car Image Browser
 
-## Description
-This is a demo of the YOLO real-time object detection model with Streamlit on the Udacity self-driving-car dataset.
+This demonstration the [Udacity self-driving-car dataset](https://github.com/udacity/self-driving-car) and [YOLO object detection](https://pjreddie.com/darknet/yolo) into an [interactive Streamlit app](streamlit.io). This project is similar to internal machine learning tools we built while [working on self-driving cars at major companies](https://www.linkedin.com/in/adrien-treuille-52215718/).
 
+The complete demo is [implemented in less than 300 lines of Python]() and illustrates all the major building blocks of Streamlit.
+
+![Making-of Animation](https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_making_of.gif "Making-of Animation")
+
+## How to run this demo
+```
+pip install streamlit opencv-python altair
+streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
+```
+
+❗️**NOTE: This demo requires version 0.46 of Streamlit which has not been released yet!**
+
+### Questions? Comments?
+
+Please ask in the [Streamlit community](discuss.streamlit.io).
+
+
+<!-- 
 The demo consists of an app built with Streamlit. The app runs the YOLO model
 on images from the Udacity dataset in real time. The demo allows the user to select an image. It shows
 a reference 'ground image' for the detected objects and an image with the objects detected by YOLO.
@@ -15,6 +32,6 @@ For more details on this app see the [extended README](https://github.com/stream
 
 ## Links
 - This demo is available on Github at https://github.com/streamlit/demo-self-driving
-- Yolo: https://pjreddie.com/darknet/yolo
-- Udacity dataset: https://github.com/udacity/self-driving-car
-- Streamlit: https://github.com/streamlit/streamlit
+- Yolo: 
+- Udacity dataset: 
+- Streamlit: https://github.com/streamlit/streamlit -->
