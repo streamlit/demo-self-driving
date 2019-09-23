@@ -8,7 +8,7 @@ The complete demo is [implemented in less than 300 lines of Python](https://gith
 
 ## How to run this demo
 ```
-pip install streamlit opencv-python altair
+pip install --upgrade streamlit opencv-python altair
 streamlit run https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py
 ```
 
