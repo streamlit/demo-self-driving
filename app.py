@@ -197,11 +197,12 @@ def draw_image_with_boxes(image, boxes, header, description):
     st.markdown(description)
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
-# Download a single file if not on the filesystem and make its content available as a string.
-def get_file_content_as_string(filename):
-    download_file(filename)
-    with open(filename) as input_file:
-        return input_file.read() + "\n\n"
+# Download a single file and make its content available as a string.
+@st.cache(show_spinner=False)
+def get_file_content_as_string(path):
+    url = 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/' + path
+    response = urllib.request.urlopen(url)
+    return response.read().decode("utf-8")
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
@@ -288,12 +289,6 @@ EXTERNAL_DEPENDENCIES = {
     "yolov3.cfg": {
         "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg",
         "size": 8342
-    },
-    "README.md": {
-        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
-    },
-    "app.py": {
-        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
 }
 
