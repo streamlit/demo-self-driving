@@ -25,7 +25,7 @@ import os, urllib, cv2
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
     # Render the readme as markdown using st.markdown.
-    readme_text = st.markdown(get_file_content_as_string(README_PATH))
+    readme_text = st.markdown(get_file_content_as_string("README.md"))
 
     # Download external dependencies.
     for filename in EXTERNAL_DEPENDENCIES.keys():
@@ -39,7 +39,7 @@ def main():
         st.success('To continue select "Run the app" on the left.')
     elif app_mode == "Show the source code":
         readme_text.empty()
-        st.code(get_file_content_as_string(CODE_PATH))
+        st.code(get_file_content_as_string("app.py"))
     elif app_mode == "Run the app":
         readme_text.empty()
         run_the_app()
@@ -109,7 +109,7 @@ def run_the_app():
     metadata = load_metadata(os.path.join(DATA_URL_ROOT, "labels.csv.gz"))
     summary = create_summary(metadata)
 
-    # Uncomment this final line to peek at these DataFrames.
+    # Uncomment these lines to peek at these DataFrames.
     # st.write('## Metadata', metadata[:1000], '## Summary', summary[:1000])
 
     # Draw the UI elements to search for objects (pedestrians, cars, etc.)
@@ -127,12 +127,13 @@ def run_the_app():
 
     # Add boxes for objects on the image. These are the boxes for the ground image.
     boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
-    draw_image_with_boxes(image, boxes, "Ground Truth (frame #`%i`)" % selected_frame_index)
+    draw_image_with_boxes(image, boxes, "Ground Truth",
+        "**Human-annotated data** (frame `%i`)" % selected_frame_index)
 
     # Get the boxes for the objects detected by YOLO by running the YOLO model.
     yolo_boxes = yolo_v3(image, overlap_threshold, confidence_threshold)
-    draw_image_with_boxes(image, yolo_boxes, "YOLO Detection (overlap `%3.1f`) (confidence `%3.1f`)" %
-        (overlap_threshold, confidence_threshold))
+    draw_image_with_boxes(image, yolo_boxes, "Real-time Computer Vision",
+        "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold))
 
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui(summary):
@@ -177,7 +178,7 @@ def object_detector_ui():
     return confidence_threshold, overlap_threshold
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
-def draw_image_with_boxes(image, boxes, header):
+def draw_image_with_boxes(image, boxes, header, description):
     # Superpose the semi-transparent object detection boxes.    # Colors for the boxes
     LABEL_COLORS = {
         "car": [255, 0, 0],
@@ -193,13 +194,14 @@ def draw_image_with_boxes(image, boxes, header):
 
     # Draw the header and image.
     st.subheader(header)
+    st.markdown(description)
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
 # Download a single file if not on the filesystem and make its content available as a string.
-@st.cache(show_spinner=False)
-def get_file_content_as_string(file_path):
-    response = urllib.request.urlopen(file_path)
-    return response.read().decode("utf-8")
+def get_file_content_as_string(filename):
+    download_file(filename)
+    with open(filename) as input_file:
+        return input_file.read() + "\n\n"
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
@@ -286,11 +288,14 @@ EXTERNAL_DEPENDENCIES = {
     "yolov3.cfg": {
         "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg",
         "size": 8342
+    },
+    "README.md": {
+        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
+    },
+    "app.py": {
+        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
 }
-
-README_PATH = "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
-CODE_PATH = "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
 
 if __name__ == "__main__":
     main()
