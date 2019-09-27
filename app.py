@@ -25,7 +25,7 @@ import os, urllib, cv2
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
     # Render the readme as markdown using st.markdown.
-    readme_text = st.markdown(get_file_content_as_string("README.md"))
+    readme_text = st.markdown(get_file_content_as_string(README_PATH))
 
     # Download external dependencies.
     for filename in EXTERNAL_DEPENDENCIES.keys():
@@ -39,7 +39,7 @@ def main():
         st.success('To continue select "Run the app" on the left.')
     elif app_mode == "Show the source code":
         readme_text.empty()
-        st.code(get_file_content_as_string("app.py"))
+        st.code(get_file_content_as_string(CODE_PATH))
     elif app_mode == "Run the app":
         readme_text.empty()
         run_the_app()
@@ -196,10 +196,10 @@ def draw_image_with_boxes(image, boxes, header):
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
 # Download a single file if not on the filesystem and make its content available as a string.
-def get_file_content_as_string(filename):
-    download_file(filename)
-    with open(filename) as input_file:
-        return input_file.read() + "\n\n"
+@st.cache(show_spinner=False)
+def get_file_content_as_string(file_path):
+    response = urllib.request.urlopen(file_path)
+    return response.read().decode("utf-8")
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
@@ -286,14 +286,11 @@ EXTERNAL_DEPENDENCIES = {
     "yolov3.cfg": {
         "url": "https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg",
         "size": 8342
-    },
-    "README.md": {
-        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
-    },
-    "app.py": {
-        "url": "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
     }
 }
+
+README_PATH = "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/README.md"
+CODE_PATH = "https://raw.githubusercontent.com/streamlit/demo-self-driving/master/app.py"
 
 if __name__ == "__main__":
     main()
