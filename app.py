@@ -26,7 +26,7 @@ import os, urllib, cv2
 def main():
     # Render the readme as markdown using st.markdown.
     readme_text  = st.markdown(get_file_content_as_string("README.md"))
-    st.image("https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_next_steps.gif", width=300)
+    instruction_image = st.image("https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_next_steps.gif", width=300)
     instructions_text = st.markdown(get_file_content_as_string("instructions.md"))
 
     # Download external dependencies.
@@ -41,11 +41,13 @@ def main():
         st.sidebar.success('To continue select "Run the app".')
     elif app_mode == "Show the source code":
         readme_text.empty()
+        instruction_image.empty()
         instructions_text.empty()
         st.code(get_file_content_as_string("app.py"))
     elif app_mode == "Run the app":
         readme_text.empty()
         instructions_text.empty()
+        instruction_image.empty()
         run_the_app()
 
 # This file downloader demonstrates Streamlit animation.
