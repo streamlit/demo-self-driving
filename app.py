@@ -34,9 +34,9 @@ def main():
     # Once we have the dependencies, add a selector for the app mode on the sidebar.
     st.sidebar.title("What to do")
     app_mode = st.sidebar.selectbox("Choose the app mode",
-        ["Show the README", "Show the source code", "Run the app"])
-    if app_mode == "Show the README":
-        st.success('To continue select "Run the app" on the left.')
+        ["Show instructions", "Run the app", "Show the source code"])
+    if app_mode == "Show instructions":
+        st.sidebar.success('To continue select "Run the app".')
     elif app_mode == "Show the source code":
         readme_text.empty()
         st.code(get_file_content_as_string("app.py"))
@@ -77,9 +77,9 @@ def download_file(file_path):
 
     # Finally, we remove these visual elements by calling .empty().
     finally:
-        if weights_warning != None:
+        if weights_warning is not None:
             weights_warning.empty()
-        if progress_bar != None:
+        if progress_bar is not None:
             progress_bar.empty()
 
 # This is the main app app itself, which appears when the user selects "Run the app".
