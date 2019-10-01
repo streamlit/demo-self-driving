@@ -25,7 +25,7 @@ import os, urllib, cv2
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
     # Render the readme as markdown using st.markdown.
-    readme_text = st.markdown(get_file_content_as_string("README.md"))
+    readme_text = st.markdown(get_file_content_as_string("instructions.md"))
 
     # Download external dependencies.
     for filename in EXTERNAL_DEPENDENCIES.keys():
