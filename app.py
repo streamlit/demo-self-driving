@@ -26,7 +26,7 @@ import os, urllib, cv2
 def main():
     # Render the readme as markdown using st.markdown.
     readme_text  = st.markdown(get_file_content_as_string("README.md"))
-    st.image("https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_next_steps.gif", width=300)
+    st.image("https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_next_steps.gif")
     instructions_text = st.markdown(get_file_content_as_string("instructions.md"))
 
     # Download external dependencies.
