@@ -4,7 +4,7 @@ This project demonstrates the [Udacity self-driving-car dataset](https://github.
 
 The complete demo is [implemented in less than 300 lines of Python](https://github.com/streamlit/demo-self-driving/blob/master/app.py) and illustrates all the major building blocks of Streamlit.
 
-👈 *Please select _Run the App_ to start.*
+👈 **Please select _Run the App_ in the sidebar to start.**
 
 ### Questions? Comments?
 
