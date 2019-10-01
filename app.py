@@ -25,9 +25,7 @@ import os, urllib, cv2
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
     # Render the readme as markdown using st.markdown.
-    readme_text  = st.markdown(get_file_content_as_string("README.md"))
-    st.image("https://raw.githubusercontent.com/streamlit/demo-self-driving/master/udacity_demo_next_steps.gif")
-    instructions_text = st.markdown(get_file_content_as_string("instructions.md"))
+    readme_text = st.markdown(get_file_content_as_string("README.md"))
 
     # Download external dependencies.
     for filename in EXTERNAL_DEPENDENCIES.keys():
@@ -41,11 +39,9 @@ def main():
         st.sidebar.success('To continue select "Run the app".')
     elif app_mode == "Show the source code":
         readme_text.empty()
-        instructions_text.empty()
         st.code(get_file_content_as_string("app.py"))
     elif app_mode == "Run the app":
         readme_text.empty()
-        instructions_text.empty()
         run_the_app()
 
 # This file downloader demonstrates Streamlit animation.
