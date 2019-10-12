@@ -8,6 +8,3 @@ verify_ssl = true
 [packages]
 streamlit = ">0.47.4"
 opencv-python = "*"
-
-[requires]
-python_version = "3.6"
