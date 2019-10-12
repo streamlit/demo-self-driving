@@ -6,11 +6,8 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-numpy = "*"
+streamlit = ">0.47.4"
 opencv-python = "*"
-streamlit = "*"
-pandas = "*"
-altair = "*"
 
 [requires]
 python_version = "3.6"
