@@ -157,9 +157,7 @@ def frame_selector_ui(summary):
         alt.X("index:Q", scale=alt.Scale(nice=False)),
         alt.Y("%s:Q" % object_type))
     selected_frame_df = pd.DataFrame({"selected_frame": [selected_frame_index]})
-    vline = alt.Chart(selected_frame_df).mark_rule(color="red").encode(
-        alt.X("selected_frame:Q", axis=None)
-    )
+    vline = alt.Chart(selected_frame_df).mark_rule(color="red").encode(x = "selected_frame")
     st.sidebar.altair_chart(alt.layer(chart, vline))
 
     selected_frame = selected_frames[selected_frame_index]
