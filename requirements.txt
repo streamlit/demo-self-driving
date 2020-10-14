@@ -1,0 +1,2 @@
+opencv-python
+streamlit>0.66
