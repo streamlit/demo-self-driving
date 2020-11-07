@@ -39,7 +39,7 @@ def main():
         st.sidebar.success('To continue select "Run the app".')
     elif app_mode == "Show the source code":
         readme_text.empty()
-        st.code(get_file_content_as_string("app.py"))
+        st.code(get_file_content_as_string("streamlit_app.py"))
     elif app_mode == "Run the app":
         readme_text.empty()
         run_the_app()
