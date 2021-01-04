@@ -1,2 +1,2 @@
-opencv-python
+opencv-python-headless
 streamlit>0.66
