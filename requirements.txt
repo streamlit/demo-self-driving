@@ -1,2 +1,2 @@
 opencv-python-headless
-streamlit>0.66
+streamlit==0.80
