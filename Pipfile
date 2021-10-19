@@ -9,7 +9,7 @@ allow_prereleases = true
 [packages]
 streamlit = ">=0.84.0"
 opencv-python-headless = ">=4.5"
-backports.weakref
+backports.weakref = "*"
 # opencv-python = "*"
 
 [dev-packages]
