@@ -86,12 +86,12 @@ def download_file(file_path):
 def run_the_app():
     # To make Streamlit fast, st.cache allows us to reuse computation across runs.
     # In this common pattern, we download data from an endpoint only once.
-    @st.cache
+    @st.experimental_memo
     def load_metadata(url):
         return pd.read_csv(url)
 
     # This function uses some Pandas magic to summarize the metadata Dataframe.
-    @st.cache
+    @st.experimental_memo
     def create_summary(metadata):
         one_hot_encoded = pd.get_dummies(metadata[["frame", "label"]], columns=["label"])
         summary = one_hot_encoded.groupby(["frame"]).sum().rename(columns={
@@ -196,7 +196,7 @@ def draw_image_with_boxes(image, boxes, header, description):
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
 # Download a single file and make its content available as a string.
-@st.cache(show_spinner=False)
+@st.experimental_singleton(show_spinner=False)
 def get_file_content_as_string(path):
     url = 'https://raw.githubusercontent.com/streamlit/demo-self-driving/master/' + path
     response = urllib.request.urlopen(url)
@@ -204,7 +204,7 @@ def get_file_content_as_string(path):
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
-@st.cache(show_spinner=False)
+@st.experimental_memo(show_spinner=False)
 def load_image(url):
     with urllib.request.urlopen(url) as response:
         image = np.asarray(bytearray(response.read()), dtype="uint8")
@@ -219,7 +219,7 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
     def load_network(config_path, weights_path):
         net = cv2.dnn.readNetFromDarknet(config_path, weights_path)
         output_layer_names = net.getLayerNames()
-        output_layer_names = [output_layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+        output_layer_names = [output_layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
         return net, output_layer_names
     net, output_layer_names = load_network("yolov3.cfg", "yolov3.weights")
 
