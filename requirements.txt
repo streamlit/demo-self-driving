@@ -1,0 +1,6 @@
+opencv-python
+streamlit==1.40.1
+altair
+pandas
+numpy
+snowflake-snowpark-python

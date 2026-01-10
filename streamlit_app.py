@@ -21,6 +21,7 @@ import altair as alt
 import pandas as pd
 import numpy as np
 import os, urllib, cv2
+from datetime import date
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
@@ -34,7 +35,7 @@ def main():
     # Once we have the dependencies, add a selector for the app mode on the sidebar.
     st.sidebar.title("What to do")
     app_mode = st.sidebar.selectbox("Choose the app mode",
-        ["Show instructions", "Run the app", "Show the source code"])
+        ["Show instructions", "Run the app", "Show the source code", "Give Feedback"])
     if app_mode == "Show instructions":
         st.sidebar.success('To continue select "Run the app".')
     elif app_mode == "Show the source code":
@@ -43,6 +44,9 @@ def main():
     elif app_mode == "Run the app":
         readme_text.empty()
         run_the_app()
+    elif app_mode=="Give Feedback":
+        readme_text.empty()
+        snowflake_feedback()
 
 # This file downloader demonstrates Streamlit animation.
 def download_file(file_path):
@@ -84,14 +88,14 @@ def download_file(file_path):
 
 # This is the main app app itself, which appears when the user selects "Run the app".
 def run_the_app():
-    # To make Streamlit fast, st.cache allows us to reuse computation across runs.
+    # To make Streamlit fast, st.cache_data allows us to reuse computation across runs.
     # In this common pattern, we download data from an endpoint only once.
-    @st.experimental_memo
+    @st.cache_data
     def load_metadata(url):
         return pd.read_csv(url)
 
     # This function uses some Pandas magic to summarize the metadata Dataframe.
-    @st.experimental_memo
+    @st.cache_data
     def create_summary(metadata):
         one_hot_encoded = pd.get_dummies(metadata[["frame", "label"]], columns=["label"])
         summary = one_hot_encoded.groupby(["frame"]).sum().rename(columns={
@@ -135,6 +139,150 @@ def run_the_app():
     draw_image_with_boxes(image, yolo_boxes, "Real-time Computer Vision",
         "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold))
 
+def snowflake_feedback():
+        
+    st.title("Submit Feedback")
+
+
+
+    # Get the current Snowflake session
+    conn = st.connection("snowflake")
+    session = conn.session()
+
+    # Define table name and structure
+    table_name = "TUTORIAL_DB.NORQUEST.MY_TABLE"
+    table_schema = """
+        ID FLOAT,
+        NAME VARCHAR(16777216),
+        IMAGE FLOAT,
+        DATE DATE,
+        COMMENT VARCHAR(16777216)
+    """
+
+    # Create table if it doesn't exist
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        {table_schema}
+    )
+    """
+    session.sql(create_table_query).collect()
+
+    # Specify your Snowflake table name
+    snowflake_table_name = "TUTORIAL_DB.NORQUEST.MY_TABLE"
+
+    # Function to load data from Snowflake
+    @st.cache_data(ttl=600)
+    def load_data():
+        df = session.table(snowflake_table_name).to_pandas()
+        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
+        return df
+
+    # Function to save data to Snowflake
+    def save_data(df):
+        # Ensure 'ID' is a column, not the index
+        if 'ID' not in df.columns and df.index.name == 'ID':
+            df = df.reset_index()
+        
+        # Convert datetime back to string for Snowflake
+        df['DATE'] = df['DATE'].dt.strftime('%Y-%m-%d')
+        
+        # Convert the pandas DataFrame to a Snowpark DataFrame
+        snowpark_df = session.create_dataframe(df)
+        
+        # Write the data back to Snowflake, overwriting the existing table
+        snowpark_df.write.mode("overwrite").save_as_table(table_name)
+
+    # Load initial data
+    df = load_data()
+
+    # Create an editable dataframe using st.data_editor
+        # New section for adding data
+    st.header("Submit Feedback on Predictions")
+
+    # Input fields for new data
+    new_id = st.number_input("ID", min_value=0, step=1, value=int(df['ID'].max()) + 1 if len(df) > 0 else 0)
+    new_name = st.text_input("Name")
+    new_age = st.number_input("Image", min_value=0, max_value=150, step=1)
+    new_date = st.date_input("Date", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31))
+    new_comment = st.text_input("Comment")
+
+    # Button to add new data
+    if st.button("Add New Data"):
+        try:
+            # Create a new row
+            new_row = pd.DataFrame({
+                'ID': [new_id],
+                'NAME': [new_name],
+                'IMAGE': [new_age],
+                'DATE': [new_date],
+                'COMMENT': [new_comment],
+            })
+            
+            # Append the new row to the existing dataframe
+            updated_df = pd.concat([df, new_row], ignore_index=True)
+            
+            # Save the updated dataframe
+            save_data(updated_df)
+            
+            st.success("New data added successfully!")
+            # Refresh the data
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error adding new data: {str(e)}")
+
+
+    st.header("Feedback Overview")
+
+    edited_df = st.data_editor(
+        df, 
+        num_rows="dynamic",
+        column_config={
+            "ID": st.column_config.NumberColumn(
+                "ID",
+                help="Unique identifier for each row",
+                min_value=0,
+                step=1,
+                format="%d"
+            ),
+            "NAME": st.column_config.TextColumn(
+                "Name",
+                max_chars=16777216,
+                validate="^[a-zA-Z0-9 ]*$"
+            ),
+            "IMAGE": st.column_config.NumberColumn(
+                "Image Number",
+                help="Image Number",
+                min_value=0,
+                max_value=150,
+                step=1,
+                format="%d"
+            ),
+            "DATE": st.column_config.DateColumn(
+                "Date",
+                min_value=date(2024, 1, 1),
+                max_value=date(2100, 12, 31),
+                format="YYYY-MM-DD",
+                step=1
+            ),
+            "COMMENT": st.column_config.TextColumn(
+                "Comment",
+                max_chars=16777216,
+                validate="^[a-zA-Z0-9 ]*$"
+            )
+        },
+        hide_index=True
+    )
+
+    # Add a submit button to save changes
+    if st.button("Save Changes"):
+        try:
+            # Save the changes
+            save_data(edited_df)
+            st.success("Changes saved successfully!")
+        except Exception as e:
+            st.error(f"Error saving changes: {str(e)}")
+
+
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui(summary):
     st.sidebar.markdown("# Frame")
@@ -164,7 +312,7 @@ def frame_selector_ui(summary):
     return selected_frame_index, selected_frame
 
 # Select frames based on the selection in the sidebar
-@st.cache(hash_funcs={np.ufunc: str})
+@st.cache_data(hash_funcs={np.ufunc: str})
 def get_selected_frames(summary, label, min_elts, max_elts):
     return summary[np.logical_and(summary[label] >= min_elts, summary[label] <= max_elts)].index
 
@@ -193,7 +341,7 @@ def draw_image_with_boxes(image, boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
     st.markdown(description)
-    st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
+    st.image(image_with_boxes.astype(np.uint8), use_container_width=True)
 
 # Download a single file and make its content available as a string.
 @st.cache_resource(show_spinner=False)
@@ -204,7 +352,7 @@ def get_file_content_as_string(path):
 
 # This function loads an image from Streamlit public repo on S3. We use st.cache on this
 # function as well, so we can reuse the images across runs.
-@st.experimental_memo(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def load_image(url):
     with urllib.request.urlopen(url) as response:
         image = np.asarray(bytearray(response.read()), dtype="uint8")
@@ -215,7 +363,7 @@ def load_image(url):
 # Run the YOLO model to detect objects.
 def yolo_v3(image, confidence_threshold, overlap_threshold):
     # Load the network. Because this is cached it will only happen once.
-    @st.cache(allow_output_mutation=True)
+    @st.cache_resource
     def load_network(config_path, weights_path):
         net = cv2.dnn.readNetFromDarknet(config_path, weights_path)
         output_layer_names = net.getLayerNames()
@@ -292,3 +440,4 @@ EXTERNAL_DEPENDENCIES = {
 
 if __name__ == "__main__":
     main()
+
